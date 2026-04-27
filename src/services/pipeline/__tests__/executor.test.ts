@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Database from "better-sqlite3";
 import { ensurePipelineTables, PipelineStore, type PipelineDefinition } from "../definition.js";
 import { PipelineExecutor } from "../executor.js";
@@ -32,6 +32,10 @@ describe("PipelineExecutor", () => {
 
   beforeEach(() => {
     store = createStore();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("passes one step output into dependent step variables", async () => {
@@ -131,7 +135,8 @@ describe("PipelineExecutor", () => {
     expect(detail.steps.map((step) => step.status)).toEqual(["failed", "completed"]);
   });
 
-  it("dispatches non-primary steps to a matching managed agent", async () => {
+  it("waits for managed-agent output before running dependent pipeline steps", async () => {
+    const processMessage = vi.fn().mockResolvedValueOnce({ content: "summary from notes" });
     const sendMessage = vi.fn().mockReturnValue({
       id: "message-1",
       fromId: "primary",
@@ -140,9 +145,95 @@ describe("PipelineExecutor", () => {
       createdAt: "2026-04-24T00:00:00.000Z",
       deliveredAt: null,
     });
+    const waitForMessageResult = vi.fn().mockResolvedValue({
+      messageId: "message-1",
+      fromId: "researcher",
+      toId: "primary",
+      status: "completed",
+      content: "actual research notes",
+      error: null,
+      completedAt: "2026-04-24T00:00:01.000Z",
+    });
     const pipeline = store.create({
       name: "managed",
-      steps: [{ id: "delegate", agent: "ResearchAgent", action: "work", output: "dispatch" }],
+      steps: [
+        {
+          id: "research",
+          agent: "ResearchAgent",
+          action: "Research TON",
+          output: "notes",
+        },
+        {
+          id: "summary",
+          agent: "primary",
+          action: "Summarize {notes}",
+          depends_on: ["research"],
+          output: "report",
+        },
+      ],
+    });
+    const executor = new PipelineExecutor({
+      store,
+      agent: { processMessage } as unknown as ConstructorParameters<
+        typeof PipelineExecutor
+      >[0]["agent"],
+      agentManager: {
+        listAgentSnapshots: () => [
+          {
+            id: "researcher",
+            name: "Researcher",
+            type: "ResearchAgent",
+          },
+        ],
+        sendMessage,
+        waitForMessageResult,
+      } as unknown as ConstructorParameters<typeof PipelineExecutor>[0]["agentManager"],
+    });
+
+    const detail = await executor.execute(pipeline);
+
+    expect(detail.run.status).toBe("completed");
+    expect(detail.run.context.notes).toBe("actual research notes");
+    expect(detail.run.context.report).toBe("summary from notes");
+    expect(sendMessage).toHaveBeenCalledWith(
+      "primary",
+      "researcher",
+      expect.stringContaining("[PIPELINE STEP - research]")
+    );
+    expect(waitForMessageResult).toHaveBeenCalledWith(
+      "message-1",
+      expect.objectContaining({ agentId: "researcher" })
+    );
+    expect(processMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ userMessage: "Summarize actual research notes" })
+    );
+    expect(detail.steps.map((step) => step.status)).toEqual(["completed", "completed"]);
+  });
+
+  it("fails a managed-agent step when the delegated result fails", async () => {
+    const sendMessage = vi.fn().mockReturnValue({
+      id: "message-1",
+      fromId: "primary",
+      toId: "researcher",
+      text: "work",
+      createdAt: "2026-04-24T00:00:00.000Z",
+      deliveredAt: null,
+    });
+    const waitForMessageResult = vi.fn().mockResolvedValue({
+      messageId: "message-1",
+      fromId: "researcher",
+      toId: "primary",
+      status: "failed",
+      content: null,
+      error: "research failed",
+      completedAt: "2026-04-24T00:00:01.000Z",
+    });
+    const pipeline = store.create({
+      name: "managed failure",
+      steps: [
+        { id: "delegate", agent: "ResearchAgent", action: "work", output: "notes" },
+        { id: "summary", agent: "primary", action: "Summarize {notes}", depends_on: ["delegate"] },
+      ],
     });
     const executor = new PipelineExecutor({
       store,
@@ -158,20 +249,140 @@ describe("PipelineExecutor", () => {
           },
         ],
         sendMessage,
+        waitForMessageResult,
       } as unknown as ConstructorParameters<typeof PipelineExecutor>[0]["agentManager"],
     });
 
     const detail = await executor.execute(pipeline);
 
-    expect(detail.run.status).toBe("completed");
-    expect(sendMessage).toHaveBeenCalledWith(
-      "primary",
-      "researcher",
-      expect.stringContaining("[PIPELINE STEP - delegate]")
+    expect(detail.run.status).toBe("failed");
+    expect(detail.run.error).toContain("research failed");
+    expect(detail.steps.map((step) => step.status)).toEqual(["failed", "skipped"]);
+  });
+
+  it("fails a managed-agent step when waiting for the result times out", async () => {
+    vi.useFakeTimers();
+    const sendMessage = vi.fn().mockReturnValue({
+      id: "message-1",
+      fromId: "primary",
+      toId: "researcher",
+      text: "work",
+      createdAt: "2026-04-24T00:00:00.000Z",
+      deliveredAt: null,
+    });
+    const waitForMessageResult = vi.fn(() => new Promise(() => {}));
+    const pipeline = store.create({
+      name: "managed timeout",
+      steps: [
+        {
+          id: "delegate",
+          agent: "ResearchAgent",
+          action: "work",
+          output: "notes",
+          timeoutSeconds: 1,
+        },
+      ],
+    });
+    const executor = new PipelineExecutor({
+      store,
+      agent: { processMessage: vi.fn() } as unknown as ConstructorParameters<
+        typeof PipelineExecutor
+      >[0]["agent"],
+      agentManager: {
+        listAgentSnapshots: () => [
+          {
+            id: "researcher",
+            name: "Researcher",
+            type: "ResearchAgent",
+          },
+        ],
+        sendMessage,
+        waitForMessageResult,
+      } as unknown as ConstructorParameters<typeof PipelineExecutor>[0]["agentManager"],
+    });
+
+    const detailPromise = executor.execute(pipeline);
+    await vi.advanceTimersByTimeAsync(1_000);
+    const detail = await detailPromise;
+
+    expect(detail.run.status).toBe("failed");
+    expect(detail.steps[0].status).toBe("failed");
+    expect(detail.steps[0].error).toContain('Pipeline step "delegate" timed out after 1 seconds');
+  });
+
+  it("keeps a delegated step cancelled when the run is cancelled before a late result", async () => {
+    let resolveResult:
+      | ((value: {
+          messageId: string;
+          fromId: string;
+          toId: string;
+          status: "completed";
+          content: string;
+          error: null;
+          completedAt: string;
+        }) => void)
+      | undefined;
+    const sendMessage = vi.fn().mockReturnValue({
+      id: "message-1",
+      fromId: "primary",
+      toId: "researcher",
+      text: "work",
+      createdAt: "2026-04-24T00:00:00.000Z",
+      deliveredAt: null,
+    });
+    const waitForMessageResult = vi.fn(
+      () =>
+        new Promise<{
+          messageId: string;
+          fromId: string;
+          toId: string;
+          status: "completed";
+          content: string;
+          error: null;
+          completedAt: string;
+        }>((resolve) => {
+          resolveResult = resolve;
+        })
     );
-    expect(detail.run.context.dispatch).toMatchObject({
+    const pipeline = store.create({
+      name: "managed cancellation",
+      steps: [{ id: "delegate", agent: "ResearchAgent", action: "work", output: "notes" }],
+    });
+    const executor = new PipelineExecutor({
+      store,
+      agent: { processMessage: vi.fn() } as unknown as ConstructorParameters<
+        typeof PipelineExecutor
+      >[0]["agent"],
+      agentManager: {
+        listAgentSnapshots: () => [
+          {
+            id: "researcher",
+            name: "Researcher",
+            type: "ResearchAgent",
+          },
+        ],
+        sendMessage,
+        waitForMessageResult,
+      } as unknown as ConstructorParameters<typeof PipelineExecutor>[0]["agentManager"],
+    });
+
+    const run = executor.start(pipeline);
+    await vi.waitFor(() => expect(waitForMessageResult).toHaveBeenCalled());
+    store.cancelRun(pipeline.id, run.id);
+    resolveResult?.({
       messageId: "message-1",
-      toAgentId: "researcher",
+      fromId: "researcher",
+      toId: "primary",
+      status: "completed",
+      content: "late notes",
+      error: null,
+      completedAt: "2026-04-24T00:00:01.000Z",
+    });
+    await vi.waitFor(() => {
+      const detail = store.getRunDetail(pipeline.id, run.id);
+      expect(detail?.run.status).toBe("cancelled");
+      expect(detail?.steps[0].status).toBe("cancelled");
+      expect(detail?.run.context.notes).toBeUndefined();
     });
   });
 });
