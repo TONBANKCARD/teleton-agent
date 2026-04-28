@@ -385,4 +385,90 @@ describe("PipelineExecutor", () => {
       expect(detail?.run.context.notes).toBeUndefined();
     });
   });
+
+  it("fails a hung primary step when only the pipeline run timeout is configured", async () => {
+    vi.useFakeTimers();
+    const processMessage = vi.fn(() => new Promise(() => undefined));
+    const pipeline = store.create({
+      name: "timeout",
+      timeoutSeconds: 1,
+      steps: [
+        { id: "slow", agent: "primary", action: "never returns", output: "out" },
+        { id: "after", agent: "primary", action: "after", depends_on: ["slow"], output: "after" },
+      ],
+    });
+    const executor = new PipelineExecutor({
+      store,
+      agent: { processMessage } as unknown as ConstructorParameters<
+        typeof PipelineExecutor
+      >[0]["agent"],
+    });
+
+    const promise = executor.execute(pipeline);
+    await vi.advanceTimersByTimeAsync(1_500);
+    const detail = await promise;
+
+    expect(detail.run.status).toBe("failed");
+    expect(detail.run.error).toContain("Pipeline timed out after 1 seconds");
+    expect(detail.steps.map((step) => step.status)).toEqual(["failed", "skipped"]);
+    expect(detail.steps[0].error).toContain("Pipeline timed out after 1 seconds");
+    expect(detail.steps[1].error).toContain("Pipeline timed out after 1 seconds");
+  });
+
+  it("fails a hung managed-agent step when only the pipeline run timeout is configured", async () => {
+    vi.useFakeTimers();
+    const waitForMessageResult = vi.fn(() => new Promise(() => undefined));
+    const pipeline = store.create({
+      name: "managed-timeout",
+      timeoutSeconds: 1,
+      steps: [
+        { id: "delegate", agent: "ResearchAgent", action: "never returns", output: "dispatch" },
+        {
+          id: "after",
+          agent: "primary",
+          action: "after",
+          depends_on: ["delegate"],
+          output: "after",
+        },
+      ],
+    });
+    const executor = new PipelineExecutor({
+      store,
+      agent: {
+        processMessage: vi.fn().mockResolvedValue({ content: "after" }),
+      } as unknown as ConstructorParameters<typeof PipelineExecutor>[0]["agent"],
+      agentManager: {
+        listAgentSnapshots: () => [
+          {
+            id: "researcher",
+            name: "Researcher",
+            type: "ResearchAgent",
+          },
+        ],
+        sendMessage: vi.fn().mockReturnValue({
+          id: "message-1",
+          fromId: "primary",
+          toId: "researcher",
+          text: "work",
+          createdAt: "2026-04-24T00:00:00.000Z",
+          deliveredAt: null,
+        }),
+        waitForMessageResult,
+      } as unknown as ConstructorParameters<typeof PipelineExecutor>[0]["agentManager"],
+    });
+
+    const promise = executor.execute(pipeline);
+    await vi.advanceTimersByTimeAsync(1_500);
+    const detail = await promise;
+
+    expect(detail.run.status).toBe("failed");
+    expect(detail.run.error).toContain("Pipeline timed out after 1 seconds");
+    expect(detail.steps.map((step) => step.status)).toEqual(["failed", "skipped"]);
+    expect(detail.steps[0].error).toContain("Pipeline timed out after 1 seconds");
+    expect(detail.steps[1].error).toContain("Pipeline timed out after 1 seconds");
+    expect(waitForMessageResult).toHaveBeenCalledWith(
+      "message-1",
+      expect.objectContaining({ timeoutSeconds: expect.any(Number) })
+    );
+  });
 });

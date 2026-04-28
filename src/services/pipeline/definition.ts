@@ -733,6 +733,27 @@ export class PipelineStore {
       )
       .run(reason, now, now, runId);
   }
+
+  markTimedOutSteps(runId: string, reason: string): void {
+    const now = nowSeconds();
+    const markTimedOut = this.db.transaction(() => {
+      this.db
+        .prepare(
+          `UPDATE pipeline_run_steps
+           SET status = 'failed', error = ?, completed_at = ?, updated_at = ?
+           WHERE run_id = ? AND status = 'running'`
+        )
+        .run(reason, now, now, runId);
+      this.db
+        .prepare(
+          `UPDATE pipeline_run_steps
+           SET status = 'skipped', error = ?, completed_at = ?, updated_at = ?
+           WHERE run_id = ? AND status = 'pending'`
+        )
+        .run(reason, now, now, runId);
+    });
+    markTimedOut();
+  }
 }
 
 export function getPipelineStore(db: Database.Database): PipelineStore {
