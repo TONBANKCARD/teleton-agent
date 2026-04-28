@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">Events and Webhooks Flow</title>
+  <desc id="desc">Internal events are written to the event bus, displayed in WebUI, and delivered to configured webhooks with retries.</desc>
+  <defs>
+    <style>
+      .bg { fill: #0b0f14; }
+      .box { fill: #151b22; stroke: #3a4654; stroke-width: 2; rx: 14; }
+      .bus { fill: #10243a; stroke: #2f8df7; }
+      .external { fill: #2a1d12; stroke: #f0a340; }
+      .text { fill: #f4f7fb; font: 18px system-ui, sans-serif; }
+      .small { fill: #b8c0cc; font: 14px system-ui, sans-serif; }
+      .line { stroke: #7c8794; stroke-width: 2; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#7c8794" />
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="560" />
+  <rect class="box" x="70" y="90" width="220" height="110" />
+  <text class="text" x="105" y="138">Runtime Events</text>
+  <text class="small" x="105" y="168">agent, tool, config</text>
+  <rect class="box bus" x="430" y="90" width="260" height="110" />
+  <text class="text" x="480" y="138">Event Bus</text>
+  <text class="small" x="480" y="168">correlation IDs</text>
+  <rect class="box" x="830" y="60" width="230" height="100" />
+  <text class="text" x="870" y="108">Events Page</text>
+  <text class="small" x="870" y="138">filter and replay</text>
+  <rect class="box" x="830" y="220" width="230" height="100" />
+  <text class="text" x="870" y="268">Delivery Queue</text>
+  <text class="small" x="870" y="298">retry state</text>
+  <rect class="box external" x="830" y="380" width="230" height="100" />
+  <text class="text" x="870" y="428">External Webhook</text>
+  <text class="small" x="870" y="458">signed payload</text>
+  <line class="line" x1="290" y1="145" x2="430" y2="145" />
+  <line class="line" x1="690" y1="130" x2="830" y2="110" />
+  <line class="line" x1="690" y1="160" x2="830" y2="270" />
+  <line class="line" x1="945" y1="320" x2="945" y2="380" />
+</svg>
