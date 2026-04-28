@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Autonomous Task State Machine</title>
+  <desc id="desc">Autonomous tasks move from pending to queued, running, paused, completed, failed, or cancelled.</desc>
+  <defs>
+    <style>
+      .bg { fill: #0b0f14; }
+      .state { fill: #151b22; stroke: #4a5563; stroke-width: 2; rx: 16; }
+      .active { fill: #10243a; stroke: #2f8df7; }
+      .done { fill: #10281d; stroke: #37b26c; }
+      .stop { fill: #2b1616; stroke: #e05252; }
+      .text { fill: #f4f7fb; font: 18px system-ui, sans-serif; text-anchor: middle; }
+      .line { stroke: #7c8794; stroke-width: 2; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#7c8794" />
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="520" />
+  <rect class="state" x="70" y="200" width="150" height="80" />
+  <text class="text" x="145" y="248">Pending</text>
+  <rect class="state" x="280" y="200" width="150" height="80" />
+  <text class="text" x="355" y="248">Queued</text>
+  <rect class="state active" x="490" y="200" width="150" height="80" />
+  <text class="text" x="565" y="248">Running</text>
+  <rect class="state" x="700" y="80" width="150" height="80" />
+  <text class="text" x="775" y="128">Paused</text>
+  <rect class="state done" x="930" y="60" width="170" height="80" />
+  <text class="text" x="1015" y="108">Completed</text>
+  <rect class="state stop" x="930" y="210" width="170" height="80" />
+  <text class="text" x="1015" y="258">Failed</text>
+  <rect class="state stop" x="930" y="360" width="170" height="80" />
+  <text class="text" x="1015" y="408">Cancelled</text>
+  <line class="line" x1="220" y1="240" x2="280" y2="240" />
+  <line class="line" x1="430" y1="240" x2="490" y2="240" />
+  <line class="line" x1="640" y1="220" x2="700" y2="140" />
+  <line class="line" x1="700" y1="120" x2="640" y2="210" />
+  <line class="line" x1="640" y1="215" x2="930" y2="100" />
+  <line class="line" x1="640" y1="240" x2="930" y2="250" />
+  <line class="line" x1="640" y1="265" x2="930" y2="400" />
+</svg>

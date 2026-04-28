@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Multi-Agent Network</title>
+  <desc id="desc">The primary agent discovers trusted peers, delegates tasks based on capabilities, and tracks signed messages.</desc>
+  <defs>
+    <style>
+      .bg { fill: #0b0f14; }
+      .node { fill: #151b22; stroke: #3a4654; stroke-width: 2; rx: 16; }
+      .primary { fill: #10243a; stroke: #2f8df7; }
+      .trusted { fill: #10281d; stroke: #37b26c; }
+      .text { fill: #f4f7fb; font: 18px system-ui, sans-serif; text-anchor: middle; }
+      .small { fill: #b8c0cc; font: 14px system-ui, sans-serif; text-anchor: middle; }
+      .line { stroke: #7c8794; stroke-width: 2; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#7c8794" />
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="620" />
+  <rect class="node primary" x="470" y="230" width="260" height="120" />
+  <text class="text" x="600" y="278">Primary Agent</text>
+  <text class="small" x="600" y="310">orchestration and trust</text>
+  <rect class="node trusted" x="90" y="90" width="230" height="110" />
+  <text class="text" x="205" y="138">Research Agent</text>
+  <text class="small" x="205" y="168">web and summaries</text>
+  <rect class="node trusted" x="880" y="90" width="230" height="110" />
+  <text class="text" x="995" y="138">Code Agent</text>
+  <text class="small" x="995" y="168">repo changes</text>
+  <rect class="node" x="90" y="430" width="230" height="110" />
+  <text class="text" x="205" y="478">Monitor Agent</text>
+  <text class="small" x="205" y="508">alerts and polling</text>
+  <rect class="node" x="880" y="430" width="230" height="110" />
+  <text class="text" x="995" y="478">Remote Peer</text>
+  <text class="small" x="995" y="508">verified endpoint</text>
+  <line class="line" x1="470" y1="250" x2="320" y2="180" />
+  <line class="line" x1="730" y1="250" x2="880" y2="180" />
+  <line class="line" x1="470" y1="330" x2="320" y2="450" />
+  <line class="line" x1="730" y1="330" x2="880" y2="450" />
+</svg>
