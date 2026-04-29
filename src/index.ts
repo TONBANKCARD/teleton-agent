@@ -70,6 +70,47 @@ import type { ManagedAgentMode } from "./agents/types.js";
 
 const log = createLogger("App");
 
+interface StartAgentKeepingDashboardAliveDeps {
+  lifecycle: Pick<AgentLifecycle, "start">;
+  startAgent: () => Promise<void>;
+  /**
+   * When true, swallow start errors so the WebUI / Management API stay up.
+   * The lifecycle has already transitioned to "stopped" with the error
+   * attached, so /api/status (and the WebUI) will still surface it.
+   */
+  keepAliveOnFailure: boolean;
+  log: Pick<ReturnType<typeof createLogger>, "error">;
+}
+
+/**
+ * Run lifecycle.start(startAgent). If `keepAliveOnFailure` is true and the
+ * agent fails to start (invalid Telegram credentials, MTProto proxy
+ * unreachable, no network connectivity, …), log the error and return
+ * normally so the WebUI / Management API remain available for the user
+ * to recover. Otherwise propagate the error.
+ *
+ * Regression guard for issue #469: previously a Telegram failure during
+ * boot crashed the whole process, including the dashboard the user needs
+ * to fix the problem.
+ */
+export async function startAgentKeepingDashboardAlive(
+  deps: StartAgentKeepingDashboardAliveDeps
+): Promise<void> {
+  if (!deps.keepAliveOnFailure) {
+    await deps.lifecycle.start(deps.startAgent);
+    return;
+  }
+
+  try {
+    await deps.lifecycle.start(deps.startAgent);
+  } catch (error) {
+    deps.log.error(
+      { err: error },
+      "Agent failed to start — WebUI/API remain available so you can fix the configuration"
+    );
+  }
+}
+
 export class TeletonApp {
   private config;
   private agent: AgentRuntime;
@@ -510,8 +551,12 @@ ${blue}  ┌──────────────────────�
       }
     }
 
-    // Start agent subsystems via lifecycle
-    await this.lifecycle.start(() => this.startAgent());
+    await startAgentKeepingDashboardAlive({
+      lifecycle: this.lifecycle,
+      startAgent: () => this.startAgent(),
+      keepAliveOnFailure: this.config.webui.enabled || (this.config.api?.enabled ?? false),
+      log,
+    });
 
     // Keep process alive
     await new Promise(() => {});
