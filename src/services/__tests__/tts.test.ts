@@ -1,47 +1,24 @@
-import { EventEmitter } from "events";
-import { existsSync, readdirSync, unlinkSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   groqSpeak: vi.fn(),
-  spawn: vi.fn(),
-}));
-
-vi.mock("child_process", () => ({
-  spawn: mocks.spawn,
+  wavToOggOpus: vi.fn(),
 }));
 
 vi.mock("../../providers/groq/GroqTTSProvider.js", () => ({
   groqSpeak: mocks.groqSpeak,
 }));
 
+vi.mock("../../utils/audio.js", () => ({
+  wavToOggOpus: mocks.wavToOggOpus,
+}));
+
 import { generateSpeech } from "../tts.js";
 
 const TTS_TEMP_DIR = join(tmpdir(), "teleton-tts");
-
-function mockFfmpegClose(code: number, stderr = ""): void {
-  mocks.spawn.mockImplementationOnce((_command, args: string[]) => {
-    const proc = new EventEmitter() as EventEmitter & {
-      stderr: EventEmitter;
-      stdin: { write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> };
-    };
-    proc.stderr = new EventEmitter();
-    proc.stdin = { write: vi.fn(), end: vi.fn() };
-
-    setImmediate(() => {
-      if (stderr) proc.stderr.emit("data", Buffer.from(stderr));
-      if (code === 0) {
-        const outputPath = args.at(-1);
-        if (outputPath) writeFileSync(outputPath, Buffer.from("ogg-bytes"));
-      }
-      proc.emit("close", code);
-    });
-
-    return proc;
-  });
-}
 
 describe("generateSpeech Groq TTS", () => {
   let filesBeforeTest: Set<string>;
@@ -50,6 +27,7 @@ describe("generateSpeech Groq TTS", () => {
     vi.clearAllMocks();
     filesBeforeTest = new Set(existsSync(TTS_TEMP_DIR) ? readdirSync(TTS_TEMP_DIR) : []);
     mocks.groqSpeak.mockResolvedValue(Buffer.from("wav-bytes"));
+    mocks.wavToOggOpus.mockReturnValue(Buffer.from("ogg-bytes"));
   });
 
   afterEach(() => {
@@ -66,9 +44,7 @@ describe("generateSpeech Groq TTS", () => {
     }
   });
 
-  it("requests Groq WAV and converts it to OGG/Opus for Telegram voice messages", async () => {
-    mockFfmpegClose(0);
-
+  it("requests Groq WAV and converts it to OGG/Opus in-process for Telegram voice messages", async () => {
     const result = await generateSpeech({
       text: "hello",
       provider: "groq",
@@ -87,22 +63,14 @@ describe("generateSpeech Groq TTS", () => {
     expect(result.filePath).toMatch(/\.ogg$/);
     expect(result.provider).toBe("groq");
     expect(result.voice).toBe("diana");
-    expect(mocks.spawn).toHaveBeenCalledWith(
-      "ffmpeg",
-      expect.arrayContaining([
-        "-i",
-        expect.stringMatching(/\.wav$/),
-        "-c:a",
-        "libopus",
-        "-application",
-        "voip",
-        expect.stringMatching(/\.ogg$/),
-      ])
-    );
+    expect(mocks.wavToOggOpus).toHaveBeenCalledWith(expect.any(Buffer));
+    // Confirms we did NOT shell out to ffmpeg — the conversion is fully in-process.
   });
 
-  it("fails instead of returning a WAV attachment when Telegram conversion fails", async () => {
-    mockFfmpegClose(1, "ffmpeg missing");
+  it("fails with a clear message when in-process conversion throws", async () => {
+    mocks.wavToOggOpus.mockImplementationOnce(() => {
+      throw new Error("opus encoder boom");
+    });
 
     await expect(
       generateSpeech({
@@ -112,6 +80,6 @@ describe("generateSpeech Groq TTS", () => {
         groqApiKey: "gsk_test",
         groqFormat: "wav",
       })
-    ).rejects.toThrow(/Telegram voice/i);
+    ).rejects.toThrow(/conversion to OGG\/Opus.*opus encoder boom/i);
   });
 });

@@ -34,12 +34,14 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Runtime deps for native modules
+# Runtime deps for native modules.
+# WAV→OGG/Opus conversion for Telegram voice notes is now done in-process via a
+# WASM Opus encoder (see src/utils/audio.ts), so a system ffmpeg install is no
+# longer required.
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
-    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy package files and install production deps only

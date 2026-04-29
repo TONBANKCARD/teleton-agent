@@ -9,7 +9,7 @@
  */
 
 import { spawn } from "child_process";
-import { writeFileSync, mkdirSync, existsSync, unlinkSync } from "fs";
+import { writeFileSync, mkdirSync, existsSync, unlinkSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { randomUUID } from "crypto";
@@ -18,6 +18,7 @@ import { fetchWithTimeout } from "../utils/fetch.js";
 import { TTS_TIMEOUT_MS } from "../constants/timeouts.js";
 import { OPENAI_TTS_URL, ELEVENLABS_TTS_URL } from "../constants/api-endpoints.js";
 import { groqSpeak } from "../providers/groq/GroqTTSProvider.js";
+import { wavToOggOpus } from "../utils/audio.js";
 
 export type TTSProvider = "piper" | "edge" | "openai" | "elevenlabs" | "groq";
 
@@ -204,44 +205,15 @@ async function generatePiperTTS(text: string, voice: string): Promise<TTSResult>
     });
   });
 
-  // Convert WAV to OGG/Opus for Telegram voice messages
+  // Convert WAV to OGG/Opus for Telegram voice messages.
+  // Uses a WASM Opus encoder so the agent works without a system ffmpeg install.
   try {
-    await new Promise<void>((resolve, reject) => {
-      const proc = spawn("ffmpeg", [
-        "-y",
-        "-i",
-        wavPath,
-        "-c:a",
-        "libopus",
-        "-b:a",
-        "48k",
-        "-application",
-        "voip",
-        oggPath,
-      ]);
-
-      let stderr = "";
-      proc.stderr?.on("data", (data) => {
-        stderr += data.toString();
-      });
-
-      proc.on("close", (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`ffmpeg failed (code ${code}): ${stderr}`));
-        }
-      });
-
-      proc.on("error", (err) => {
-        reject(new Error(`ffmpeg spawn error: ${err.message}`));
-      });
-    });
-
-    // Cleanup WAV
+    const wavBuffer = readFileSync(wavPath);
+    const oggBuffer = wavToOggOpus(wavBuffer);
+    writeFileSync(oggPath, oggBuffer);
     unlinkSync(wavPath);
   } catch {
-    // If ffmpeg fails, fallback to WAV
+    // If conversion fails, fall back to the raw WAV so the caller still gets audio.
     return {
       filePath: wavPath,
       provider: "piper",
@@ -437,40 +409,12 @@ async function generateGroqTTS(
   writeFileSync(outputPath, audioBuffer);
 
   // Telegram requires OGG/Opus for proper voice message rendering.
-  // WAV files sent as-is will appear as file attachments instead of voice messages.
+  // We transcode in-process via a WASM Opus encoder so deployments don't need
+  // a system ffmpeg install (see src/utils/audio.ts).
   const oggPath = join(tempDir, `${randomUUID()}.ogg`);
   try {
-    await new Promise<void>((resolve, reject) => {
-      const proc = spawn("ffmpeg", [
-        "-y",
-        "-i",
-        outputPath,
-        "-c:a",
-        "libopus",
-        "-b:a",
-        "48k",
-        "-application",
-        "voip",
-        oggPath,
-      ]);
-
-      let stderr = "";
-      proc.stderr?.on("data", (data) => {
-        stderr += data.toString();
-      });
-
-      proc.on("close", (code) => {
-        if (code === 0 && existsSync(oggPath)) {
-          resolve();
-        } else {
-          reject(new Error(`ffmpeg failed (code ${code}): ${stderr}`));
-        }
-      });
-
-      proc.on("error", (err) => {
-        reject(new Error(`ffmpeg spawn error: ${err.message}`));
-      });
-    });
+    const oggBuffer = wavToOggOpus(audioBuffer);
+    writeFileSync(oggPath, oggBuffer);
   } catch (error) {
     try {
       unlinkSync(outputPath);
@@ -478,8 +422,7 @@ async function generateGroqTTS(
       // Ignore cleanup errors
     }
     throw new Error(
-      `Groq TTS generated WAV, but Telegram voice messages require OGG/Opus. ` +
-        `Install ffmpeg with libopus support so Teleton can create Telegram voice notes. ` +
+      `Groq TTS produced WAV, but conversion to OGG/Opus for Telegram voice notes failed: ` +
         `${error instanceof Error ? error.message : String(error)}`
     );
   }
