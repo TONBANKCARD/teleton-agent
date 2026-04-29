@@ -36,3 +36,6 @@ TODOS/
 # TTS voice models (large binaries)
 piper-voices/
 
+# Local Playwright MCP traces / snapshots
+.playwright-mcp/
+
