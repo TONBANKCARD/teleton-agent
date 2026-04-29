@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+- **`telegram_schedule_message` agent tool**: Now logs a runtime deprecation warning and surfaces `deprecated: true` plus a `deprecationNotice` field in its result. The tool only queues plain text and cannot execute tools, trading functions, or multi-step workflows when the message is delivered, which silently breaks any automation that relies on it. Use `telegram_create_scheduled_task` (with a `tool_call` or `agent_task` payload) for any automation that must run at a scheduled time. The tool description now leads with `[DEPRECATED — use telegram_create_scheduled_task instead]` so the LLM picks the correct tool by default (closes xlabtg/teleton-agent#459).
+
 ### Added
 - **Bot API HTTPS proxy (`mtproto.bot_api_proxy`)**: Optional HTTP/HTTPS or SOCKS5 proxy URL for Telegram Bot API HTTPS calls to `api.telegram.org`. MTProto proxies cannot tunnel HTTPS, so this lets the deals bot reach the Bot API in regions where Telegram is also blocked at the IP level. Wired through to Grammy's `client.baseFetchConfig.agent` via `https-proxy-agent` / `socks-proxy-agent` (closes xlabtg/teleton-agent#439).
 
