@@ -8,6 +8,7 @@ import { TelegramBotBridge } from "./telegram/bot-bridge.js";
 import { MessageHandler } from "./telegram/handlers.js";
 import { AdminHandler } from "./telegram/admin.js";
 import { MessageDebouncer } from "./telegram/debounce.js";
+import { MessageDedupCache } from "./telegram/message-dedup-cache.js";
 import { getDatabase, closeDatabase, initializeMemory, type MemorySystem } from "./memory/index.js";
 import { getWalletAddress, clearKeyPair } from "./ton/wallet-service.js";
 import { setTonapiKey } from "./constants/api-endpoints.js";
@@ -132,6 +133,8 @@ export class TeletonApp {
   private mcpConnections: McpConnection[] = [];
   private callbackHandlerRegistered = false;
   private messageHandlersRegistered = false;
+  private scheduledTaskMessageHandlerRegistered = false;
+  private scheduledTaskTriggerMessages = new MessageDedupCache();
   private lifecycle = new AgentLifecycle();
   private hookRunner?: ReturnType<typeof createHookRunner>;
   private userHookEvaluator: UserHookEvaluator | null = null;
@@ -997,6 +1000,24 @@ ${blue}  ┌──────────────────────�
 
     // Register GramJS event handlers ONCE (survive agent restart via WebUI)
     if (!this.messageHandlersRegistered) {
+      const ownUserId = this.bridge.getOwnUserId();
+      if (!this.scheduledTaskMessageHandlerRegistered && ownUserId) {
+        this.bridge.onNewMessage(
+          async (message) => {
+            try {
+              await this.handleScheduledTaskTrigger(message);
+            } catch (error) {
+              log.error({ err: error }, "Error handling scheduled task trigger");
+            }
+          },
+          {
+            incoming: true,
+            chats: [ownUserId.toString()],
+          }
+        );
+        this.scheduledTaskMessageHandlerRegistered = true;
+      }
+
       this.bridge.onNewMessage(async (message) => {
         try {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- debouncer always initialized before handlers register
@@ -1117,14 +1138,7 @@ ${blue}  ┌──────────────────────�
   private async handleSingleMessage(message: TelegramMessage): Promise<void> {
     this.messagesProcessed++;
     try {
-      // Check if this is a scheduled task (from self)
-      const ownUserId = this.bridge.getOwnUserId();
-      if (
-        ownUserId &&
-        message.senderId === Number(ownUserId) &&
-        message.text.startsWith("[TASK:")
-      ) {
-        await this.handleScheduledTask(message);
+      if (await this.handleScheduledTaskTrigger(message)) {
         return;
       }
 
@@ -1203,6 +1217,40 @@ ${blue}  ┌──────────────────────�
     }
   }
 
+  private isScheduledTaskTrigger(message: TelegramMessage): boolean {
+    if (!message.text.startsWith("[TASK:")) {
+      return false;
+    }
+
+    const ownUserId = this.bridge.getOwnUserId();
+    if (!ownUserId) {
+      return false;
+    }
+
+    const ownUserIdText = ownUserId.toString();
+    return message.chatId === ownUserIdText || message.senderId === Number(ownUserId);
+  }
+
+  private async handleScheduledTaskTrigger(message: TelegramMessage): Promise<boolean> {
+    if (!this.isScheduledTaskTrigger(message)) {
+      return false;
+    }
+
+    const dedupKey = `${message.chatId}:${message.id}`;
+    if (this.scheduledTaskTriggerMessages.has(dedupKey)) {
+      return true;
+    }
+    this.scheduledTaskTriggerMessages.add(dedupKey);
+
+    log.info(
+      { chatId: message.chatId, messageId: message.id },
+      "Scheduled task trigger detected in Saved Messages"
+    );
+
+    await this.handleScheduledTask(message);
+    return true;
+  }
+
   /**
    * Handle scheduled task message
    */
@@ -1220,16 +1268,19 @@ ${blue}  ┌──────────────────────�
     const match = message.text.match(/^\[TASK:([^\]]+)\]/);
     if (!match) {
       log.warn(`Invalid task format: ${message.text}`);
+      await this.deleteScheduledTaskTriggerMessage(message);
       return;
     }
 
     const taskId = match[1];
+    let shouldDeleteTriggerMessage = false;
 
     try {
       const task = taskStore.getTask(taskId);
 
       if (!task) {
         log.warn(`Task ${taskId} not found in database`);
+        shouldDeleteTriggerMessage = true;
         await this.bridge.sendMessage({
           chatId: message.chatId,
           text: `⚠️ Task ${taskId} not found. It may have been deleted.`,
@@ -1246,6 +1297,7 @@ ${blue}  ┌──────────────────────�
         task.status === "failed"
       ) {
         log.info(`⏭️ Task ${taskId} already ${task.status}, skipping`);
+        shouldDeleteTriggerMessage = true;
         return;
       }
 
@@ -1311,6 +1363,7 @@ ${blue}  ┌──────────────────────�
 
       // Mark task as done if agent responded successfully
       taskStore.completeTask(taskId, response.content);
+      shouldDeleteTriggerMessage = true;
 
       log.info(`✅ Executed scheduled task ${taskId}: ${task.description}`);
 
@@ -1328,6 +1381,7 @@ ${blue}  ┌──────────────────────�
       }
     } catch (error) {
       log.error({ err: error }, "Error handling scheduled task");
+      shouldDeleteTriggerMessage = true;
 
       // Try to mark task as failed and cascade to dependents
       try {
@@ -1343,6 +1397,32 @@ ${blue}  ┌──────────────────────�
       } catch {
         // Ignore if we can't update task
       }
+    } finally {
+      if (shouldDeleteTriggerMessage) {
+        await this.deleteScheduledTaskTriggerMessage(message);
+      }
+    }
+  }
+
+  private async deleteScheduledTaskTriggerMessage(message: TelegramMessage): Promise<void> {
+    try {
+      const { Api } = await import("telegram");
+      const gramJsClient = this.bridge.getClient().getClient();
+      await gramJsClient.invoke(
+        new Api.messages.DeleteMessages({
+          id: [message.id],
+          revoke: true,
+        })
+      );
+      log.info(
+        { chatId: message.chatId, messageId: message.id },
+        "Deleted scheduled task trigger message"
+      );
+    } catch (error) {
+      log.warn(
+        { err: error, chatId: message.chatId, messageId: message.id },
+        "Failed to delete scheduled task trigger message"
+      );
     }
   }
 
