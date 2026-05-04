@@ -58,6 +58,8 @@ export interface ToolExecutionResult {
 export interface Reflection {
   progressSummary: string;
   isStuck: boolean;
+  /** True when self-reflection determines all success criteria are satisfied. */
+  goalAchieved?: boolean;
   adjustments?: {
     contextAdditions?: Record<string, unknown>;
     nextActionHint?: string;
@@ -399,11 +401,17 @@ export class AutonomousLoop {
           step: current.currentStep,
           eventType: "reflect",
           message: reflection.progressSummary,
-          data: { isStuck: reflection.isStuck, adjustments: reflection.adjustments },
+          data: {
+            isStuck: reflection.isStuck,
+            goalAchieved: reflection.goalAchieved,
+            adjustments: reflection.adjustments,
+          },
         });
 
-        // Handle reflection outcomes
-        if (reflection.shouldEscalate) {
+        // Handle reflection outcomes. A completed goal wins over escalation
+        // or "stuck" signals from the same reflection, but we still save the
+        // final checkpoint below before returning.
+        if (!reflection.goalAchieved && reflection.shouldEscalate) {
           const reason = reflection.escalationReason ?? "Agent flagged uncertainty";
           await this.deps.escalate(current, reason);
           this.throwIfAborted();
@@ -415,7 +423,7 @@ export class AutonomousLoop {
           };
         }
 
-        if (reflection.isStuck) {
+        if (!reflection.goalAchieved && reflection.isStuck) {
           const maxConsecutive = 3;
           const shouldEscalate = this.policyEngine.recordUncertain();
           if (shouldEscalate) {
@@ -464,7 +472,8 @@ export class AutonomousLoop {
         });
 
         // 7. Check success criteria
-        const succeeded = await this.deps.evaluateSuccess(current, result);
+        const succeeded =
+          reflection.goalAchieved || (await this.deps.evaluateSuccess(current, result));
         this.throwIfAborted();
         if (succeeded) {
           log.info({ taskId: task.id }, "Task completed successfully");

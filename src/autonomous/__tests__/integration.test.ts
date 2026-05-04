@@ -175,6 +175,59 @@ describe("buildDefaultLoopDeps planner prompt", () => {
   });
 });
 
+describe("buildDefaultLoopDeps success reflection", () => {
+  let db: InstanceType<typeof Database>;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    db.pragma("foreign_keys = ON");
+    ensureSchema(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("completes a criteria-based task when reflection says the goal is achieved", async () => {
+    const callLLM = vi.fn().mockImplementation(async (prompt: string) => {
+      if (prompt.includes("Answer with JSON")) {
+        return JSON.stringify({
+          progressSummary: "All success criteria are satisfied",
+          isStuck: false,
+          goalAchieved: true,
+        });
+      }
+      return JSON.stringify({
+        toolName: "alpha",
+        params: { query: "status" },
+        reasoning: "Verify the final state",
+        confidence: 0.95,
+      });
+    });
+
+    const deps = buildDefaultLoopDeps({
+      callLLM,
+      callTool: vi.fn().mockResolvedValue({ reportSent: true }),
+      notify: vi.fn().mockResolvedValue(undefined),
+      listTools: () => [{ name: "alpha", description: "Check task status" }],
+    });
+
+    const store = getAutonomousTaskStore(db);
+    const task = store.createTask({
+      goal: "Send the report",
+      successCriteria: ["report sent"],
+      constraints: { maxIterations: 2 },
+    });
+
+    const loop = new AutonomousLoop(store, deps, DEFAULT_POLICY_CONFIG);
+    const result = await loop.run(task);
+
+    expect(result.status).toBe("completed");
+    expect(store.getTask(task.id)?.status).toBe("completed");
+    expect(callLLM).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("buildIntegratedLoopDeps admin check", () => {
   let db: InstanceType<typeof Database>;
   let registry: ToolRegistry;

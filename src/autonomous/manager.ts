@@ -356,6 +356,7 @@ export function buildDefaultLoopDeps(opts: {
         return {
           progressSummary: parsed.progressSummary ?? "Progress evaluated",
           isStuck: parsed.isStuck ?? false,
+          goalAchieved: parsed.goalAchieved ?? false,
           adjustments: parsed.nextActionHint
             ? { nextActionHint: parsed.nextActionHint }
             : undefined,
