@@ -15,14 +15,14 @@
 
 ---
 
-<p align="center">Teleton is an autonomous AI agent platform that operates as a real Telegram user account or a Telegram Bot. It thinks through an agentic loop with tool calling, remembers conversations across sessions with hybrid RAG, and natively integrates the TON blockchain: send crypto, swap on DEXs, bid on domains, verify payments - all from a chat message. It can schedule tasks to run autonomously at any time. It ships with 135+ built-in tools, supports 16 LLM providers, and exposes a Plugin SDK so you can build your own tools on top of the platform.</p>
+<p align="center">Teleton is an autonomous AI agent platform that operates as a real Telegram user account or a Telegram Bot. It thinks through an agentic loop with tool calling, remembers conversations across sessions with hybrid RAG, and natively integrates the TON blockchain: send crypto, swap on DEXs, bid on domains, verify payments - all from a chat message. It can schedule tasks, run long autonomous goals, coordinate with other agents, and expose its operator console through a local-first WebUI. It ships with 135+ built-in tools, supports 16 LLM providers, and exposes a Plugin SDK so you can build your own tools on top of the platform.</p>
 
 ### Key Highlights
 
 <table>
 <tr>
 <td align="center" width="33%"><br><b><ins>Full Telegram Access</ins></b><br>Real user via MTProto,<br>not a bot<br><br></td>
-<td align="center" width="33%"><br><b><ins>Agentic Loop</ins></b><br>Think, act, observe, repeat<br>until shit gets done<br><br></td>
+<td align="center" width="33%"><br><b><ins>Agentic Loop</ins></b><br>Think, act, observe, repeat<br>until the task is done<br><br></td>
 <td align="center" width="33%"><br><b><ins>16 LLM Providers</ins></b><br>Anthropic, OpenAI, Google, xAI, Groq, and more<br><br></td>
 </tr>
 <tr>
@@ -32,10 +32,31 @@
 </tr>
 <tr>
 <td align="center"><br><b><ins>Plugin SDK</ins></b><br>Custom tools, isolated DBs, secrets, hooks<br><br></td>
-<td align="center"><br><b><ins>MCP Client</ins></b><br>Connect any MCP tool server<br><br></td>
-<td align="center"><br><b><ins>Secure by Design</ins></b><br>Sandbox, plugin isolation, prompt defense<br><br></td>
+<td align="center"><br><b><ins>23-Page WebUI</ins></b><br>Agents, pipelines, events, security, network<br><br></td>
+<td align="center"><br><b><ins>Secure by Design</ins></b><br>Sandbox, signed ingress, prompt defense<br><br></td>
 </tr>
 </table>
+
+---
+
+## Current Fork Status
+
+Current fork version: `0.8.19`.
+
+This README reflects the `xlabtg/teleton-agent` fork through merged PR [#480](https://github.com/xlabtg/teleton-agent/pull/480) / closed issue [#479](https://github.com/xlabtg/teleton-agent/issues/479). It was refreshed from the closed work history available at issue [#481](https://github.com/xlabtg/teleton-agent/issues/481): 236 closed issues and the 200 most recent merged pull requests as of the latest analyzed run.
+
+The current WebUI ships with 23 WebUI pages and 42 authenticated WebUI API route groups.
+
+### Closed-Work Summary
+
+| Area | Implemented outcomes |
+| ---- | -------------------- |
+| **Autonomous mode** | Autonomous Task Engine, natural-language task parser, policy persistence, checkpoint cleanup, pause/resume hardening, reflection-success completion, Saved Messages task triggers, and restored autonomous-task foreign keys. |
+| **V2 platform features** | Semantic vector memory, associative memory graph, memory prioritization, prediction engine, predictive cache, anomaly detection, agent registry, task delegation, pipeline execution, self-correction loop, temporal context, zero-trust execution, audit trail, integrations, event bus/webhooks, dynamic dashboards, AI widget generator, feedback learning, adaptive prompting, and multi-agent network. |
+| **WebUI** | Dashboard widgets, tools controls, plugins marketplace, Soul editor, Memory, Workspace, Tasks, Workflows, Pipelines, Events, MCP, Integrations, Network, Hooks, Sessions, Analytics, Feedback, Security, Self-Improve, Autonomous Mode, Configuration, setup/login flow, and bilingual user guide. |
+| **Network and agents** | Managed agent runtimes with personal/bot auth, signed inter-agent messages, trust levels, replay protection, allowlist/recipient enforcement, manual inbox fallback, remote setup docs, and local-agent visibility in Network status totals. |
+| **Telegram and providers** | MTProto proxy recovery, Bot API proxy support, startup resilience when Telegram is unavailable, ffmpeg-free Telegram voice notes, Groq STT/TTS fixes, NVIDIA NIM provider support, OpenRouter free models, and 16-provider model catalog. |
+| **Security and reliability** | Wallet encryption, plugin isolation, exec allowlist mode, shell-free allowlist execution, TON-proxy checksum verification, SSRF guards, path/symlink hardening, auth-token hashing, CSRF fixes, restart locks, transcript caps, session TTL enforcement, CI restoration, and audit reports. |
 
 ---
 
@@ -59,26 +80,26 @@
 
 ### Advanced Capabilities
 
-| Capability              | Description                                                              |
-| ----------------------- | ------------------------------------------------------------------------ |
-| **Multi-Provider LLM**  | 16 providers, hot-swap from dashboard or CLI                             |
-| **RAG + Hybrid Search** | Vector (sqlite-vec) + keyword (FTS5) fused search                        |
-| **Auto-Compaction**     | AI summarizes old context, saves to `memory/*.md`                        |
-| **Observation Masking** | Compresses old tool results, saves ~90% context                          |
-| **Plugin SDK**          | Frozen SDK, isolated DBs, secrets, lifecycle hooks                       |
-| **Smart DEX Router**    | Compares STON.fi vs DeDust, picks best rate                              |
-| **Vision Analysis**     | Image understanding via utility model                                    |
-| **Scheduled Tasks**     | Cron-like tasks with dependency chains                                   |
-| **Message Debouncing**  | Batches rapid group messages, DMs stay instant                           |
-| **Daily Logs**          | Auto session summaries, persisted across resets                          |
-| **Multi-Policy Access** | DM/group policies (open, allowlist, admin-only, disabled), per-group     |
-| **Tool RAG**            | Sends only top-K relevant tools per message                              |
-| **MCP Client**          | stdio, SSE, Streamable HTTP, auto-discovery, CLI or WebUI               |
-| **System Execution**    | YOLO mode: shell, files, processes (off by default, admin-only)          |
-| **TON Proxy**           | Browse .ton domains via HTTP proxy, auto-installed                       |
-| **Management API**      | HTTPS control plane for remote admin, bootstrap mode, lifecycle control  |
-| **Sandboxed Workspace** | Path traversal protection, symlink detection, immutable configs          |
-| **Heartbeat**           | Autonomous periodic wake-up, HEARTBEAT.md task checklist, configurable intervals |
+| Capability | Description |
+| ---------- | ----------- |
+| **Multi-Provider LLM** | 16 providers with hot-swap from CLI/WebUI and 100+ model presets in the shared catalog. |
+| **RAG + Semantic Memory** | Local SQLite FTS5 + sqlite-vec plus optional Upstash Vector sync and dimension mismatch detection. |
+| **Memory Graph + Prioritization** | Entity graph, priority scoring, cleanup candidates, pinning, and retention controls. |
+| **Auto-Compaction** | AI summarizes old context, preserves critical identifiers, and writes compaction audit entries. |
+| **Observation Masking** | Compresses old tool results while preserving recent tool outputs for reasoning. |
+| **Autonomous Mode** | Long-running goals with planning, policy checks, retries, checkpoints, reflection, pause/resume, and escalation. |
+| **Workflow Automation** | Cron/event/webhook workflows and DAG pipelines with bounded timeouts and delegated-agent result waiting. |
+| **Multi-Agent Network** | Signed Ed25519 messages, trust levels, allowlist/blocklist controls, replay protection, and task delegation. |
+| **Managed Agents** | Create, clone, start/stop, authenticate, and monitor personal-account or bot-mode agents from WebUI. |
+| **Plugin SDK** | Frozen SDK, isolated DBs, scoped secrets, lifecycle hooks, bot inline callbacks, and custom tools. |
+| **MCP Client** | stdio, SSE, and Streamable HTTP servers with namespaced tools and WebUI management. |
+| **Smart DEX Router** | Compares STON.fi and DeDust, supports wallet, jettons, NFTs, DNS, and payment verification. |
+| **Prediction + Feedback** | Behavior predictions, dashboard suggestions, feedback capture, and adaptive prompting experiments. |
+| **Security Center** | Audit trail, approvals, zero-trust execution policy, secrets, auth hardening, and anomaly alerts. |
+| **System Execution** | Exec tools are off by default; allowlist and YOLO modes are audited and admin-scoped. |
+| **Management API** | HTTPS control plane for remote admin, bootstrap mode, lifecycle control, logs, memory, and reused WebUI routes. |
+| **TON Proxy + MTProto Proxy** | .ton HTTP proxy lifecycle plus MTProto/Bot API proxy support for restricted networks. |
+| **Heartbeat** | Autonomous periodic wake-up with configurable prompt and safe admin-id handling. |
 
 ---
 
@@ -111,7 +132,7 @@ docker run -it -v ~/.teleton:/data ghcr.io/tonresistor/teleton-agent:latest setu
 
 **From source (development):**
 ```bash
-git clone https://github.com/TONresistor/teleton-agent.git
+git clone https://github.com/xlabtg/teleton-agent.git
 cd teleton-agent
 npm install && npm run build
 ```
@@ -174,13 +195,17 @@ The `teleton setup` wizard generates a fully configured `~/.teleton/config.yaml`
 agent:
   provider: "anthropic"              # anthropic | claude-code | openai | google | xai | groq | openrouter | moonshot | mistral | cerebras | zai | minimax | huggingface | nvidia | cocoon | local
   api_key: "sk-ant-api03-..."
-  model: "claude-haiku-4-5-20251001"
-  utility_model: "claude-haiku-4-5-20251001"  # for summarization, compaction, vision
+  model: "claude-opus-4-6"
+  utility_model: "claude-haiku-4-5-20251001"  # optional: summarization, compaction, vision
   max_agentic_iterations: 5
   session_reset_policy:
     daily_reset_enabled: true
     daily_reset_hour: 4
     idle_expiry_minutes: 1440  # 24h idle → new session
+  compaction:
+    enabled: true
+    log_compaction: true
+    auto_preserve: true
 
 telegram:
   dm_policy: "admin-only"   # open | allowlist | admin-only | disabled
@@ -207,36 +232,80 @@ ton_proxy:                   # Optional: .ton domain proxy
   port: 8080                 # HTTP proxy port
   # binary_path: "..."       # Custom binary path (auto-downloaded if omitted)
 
+embedding:
+  provider: "local"          # local | anthropic | none
+
+vector_memory:
+  namespace: "teleton-memory"
+  # upstash_rest_url: "..."
+  # upstash_rest_token: "..."
+
+memory:
+  prioritization:
+    enabled: true
+  retention:
+    max_entries: 10000
+
+api:                         # Optional: HTTPS Management API
+  enabled: false
+  port: 7778
+  host: "127.0.0.1"
+
+network:
+  enabled: false             # Signed inter-agent network
+  agent_id: "primary"
+  agent_name: "Primary Agent"
+  default_trust_level: "untrusted"
+
+mtproto:
+  enabled: false             # Telegram MTProto proxy failover
+  proxies: []
+  # bot_api_proxy: "socks5://host:1080"
+
+predictions:
+  enabled: true
+
+feedback:
+  enabled: true
+
+adaptive_prompting:
+  enabled: true
+
+anomaly_detection:
+  enabled: true
+
 # capabilities:                # System execution (YOLO mode, off by default)
 #   exec:
-#     mode: "off"              # off | yolo
+#     mode: "off"              # off | allowlist | yolo
 #     scope: "admin-only"      # admin-only | allowlist | all
+#     command_allowlist: ["git", "ls", "npm"]
+#     sandbox_mode: "unrestricted"  # unrestricted | sandboxed | dry-run
 ```
 
 ### Supported Models
 
-70+ models across 16 providers. Defined in `src/config/model-catalog.ts`, shared across CLI, WebUI, and Dashboard.
+100+ model presets across 16 providers. Defined in `src/config/model-catalog.ts`, shared across CLI, WebUI, and Dashboard.
 
 <table>
 <tr>
 <td align="center" width="20%"><br><b>Anthropic</b><br>Claude Opus 4.6<br><br></td>
 <td align="center" width="20%"><br><b>Claude Code</b><br>Auto-detected<br><br></td>
-<td align="center" width="20%"><br><b>OpenAI</b><br>GPT-5<br><br></td>
-<td align="center" width="20%"><br><b>Google</b><br>Gemini 3 Pro<br><br></td>
+<td align="center" width="20%"><br><b>OpenAI</b><br>GPT-5.4<br><br></td>
+<td align="center" width="20%"><br><b>Google</b><br>Gemini 3.1 / 3<br><br></td>
 <td align="center" width="20%"><br><b>xAI</b><br>Grok 4.1<br><br></td>
 </tr>
 <tr>
-<td align="center"><br><b>Groq</b><br>Llama 4 Maverick<br><br></td>
-<td align="center"><br><b>OpenRouter</b><br>Multi-provider<br><br></td>
+<td align="center"><br><b>Groq</b><br>Llama 3.3, GPT OSS, Whisper, Orpheus<br><br></td>
+<td align="center"><br><b>OpenRouter</b><br>Free + multi-provider<br><br></td>
 <td align="center"><br><b>Moonshot</b><br>Kimi K2.5<br><br></td>
 <td align="center"><br><b>Mistral</b><br>Devstral<br><br></td>
 <td align="center"><br><b>Cerebras</b><br>Qwen 3 235B<br><br></td>
 </tr>
 <tr>
-<td align="center"><br><b>ZAI</b><br>GLM-5<br><br></td>
+<td align="center"><br><b>ZAI</b><br>GLM-4.7 / GLM-5<br><br></td>
 <td align="center"><br><b>MiniMax</b><br>M2.5<br><br></td>
-<td align="center"><br><b>Hugging Face</b><br>DeepSeek V3.2<br><br></td>
-<td align="center"><br><b>NVIDIA NIM</b><br>Llama, Qwen, free tier<br><br></td>
+<td align="center"><br><b>Hugging Face</b><br>DeepSeek + Qwen<br><br></td>
+<td align="center"><br><b>NVIDIA NIM</b><br>DeepSeek, Llama, Qwen<br><br></td>
 <td align="center"><br><b>Cocoon</b><br>Decentralized (TON)<br><br></td>
 </tr>
 <tr>
@@ -275,7 +344,7 @@ mcp:
 
 When the WebUI is enabled, the **MCP Servers** page lets you add/remove servers, configure environment variables (API keys), and view connection status and tool lists - all from the browser.
 
-Tools are namespaced as `mcp_<server>_<tool>` (e.g. `mcp_filesystem_read_file`). Each server supports `scope` (always, dm-only, group-only, admin-only) and `enabled` toggle.
+Tools are namespaced as `mcp.<server>.<tool>` (for example, `mcp.filesystem.read_file`). Each server supports `scope` (always, dm-only, group-only, admin-only) and `enabled` toggle.
 
 ### Environment Variables
 
@@ -303,33 +372,19 @@ All environment variables override the corresponding `config.yaml` value at star
 
 ## WebUI Dashboard
 
-Optional web dashboard, localhost only, token auth. Start with `teleton start --webui` or `teleton setup --ui`.
+Optional web dashboard, localhost only, token auth. Start with `teleton start --webui` or `teleton setup --ui`. The current build exposes 23 WebUI pages and 42 authenticated WebUI API route groups.
 
 <table>
 <tr>
-<td align="center" width="25%"><br><b>Dashboard</b><br>Status, model, tokens, config<br><br></td>
-<td align="center" width="25%"><br><b>Tools</b><br>Toggle, scope, per-module<br><br></td>
-<td align="center" width="25%"><br><b>Plugins</b><br>Marketplace, install, secrets<br><br></td>
-<td align="center" width="25%"><br><b>Soul Editor</b><br>SOUL, SECURITY, STRATEGY, MEMORY<br><br></td>
-</tr>
-<tr>
-<td align="center"><br><b>Memory Search</b><br>Vector + keyword hybrid<br><br></td>
-<td align="center"><br><b>Live Logs (in Dashboard)</b><br>Real-time SSE streaming<br><br></td>
-<td align="center"><br><b>Workspace</b><br>File browser + editor<br><br></td>
-<td align="center"><br><b>MCP Servers</b><br>Add, remove, configure<br><br></td>
-</tr>
-<tr>
-<td align="center"><br><b>TON Proxy (in Config)</b><br>Start/stop, auto-install<br><br></td>
-<td align="center"><br><b>Tasks</b><br>Schedule, dependencies, bulk<br><br></td>
-<td align="center"><br><b>Setup Wizard</b><br>QR code + phone auth<br><br></td>
-<td align="center"><br><b>Config</b><br>Provider switch, key validation<br><br></td>
-</tr>
-<tr>
-<td align="center"><br><b>Hooks</b><br>Plugin hook registrations<br><br></td>
+<td align="center" width="20%"><br><b>Operations</b><br>Dashboard, Agents, Tasks, Workflows, Pipelines, Events, Autonomous<br><br></td>
+<td align="center" width="20%"><br><b>Knowledge</b><br>Soul, Memory, Workspace, Sessions<br><br></td>
+<td align="center" width="20%"><br><b>Tools</b><br>Tools, Plugins, MCP, Integrations, Hooks<br><br></td>
+<td align="center" width="20%"><br><b>Observability</b><br>Analytics, Feedback, Security, Self-Improve<br><br></td>
+<td align="center" width="20%"><br><b>Control</b><br>Config, Network, Setup<br><br></td>
 </tr>
 </table>
 
-Auth token is printed at startup. Stored as HttpOnly cookie for 7 days. For remote access:
+Auth token is printed at startup and stored as an HttpOnly cookie for 7 days. The bilingual WebUI guide is in [docs/user-guide/README.md](docs/user-guide/README.md). For remote access:
 
 ```bash
 ssh -L 7777:localhost:7777 user@remote-server
@@ -339,24 +394,29 @@ ssh -L 7777:localhost:7777 user@remote-server
 
 By default, the agent has a **sandboxed workspace** at `~/.teleton/workspace/` with 6 file tools (read, write, delete, rename, list, info). Path traversal protection, symlink detection, and 500 MB quota. Core files (`SOUL.md`, `STRATEGY.md`, `SECURITY.md`) are immutable. Write operations are DM-only.
 
-**YOLO mode** unlocks full system access (off by default, Linux only):
+**System execution** is off by default. Allowlist mode runs exact program names from `command_allowlist`; YOLO mode unlocks full system access (Linux only):
 
 | Tool | Description |
 |------|-------------|
-| `exec_run` | Execute any bash command |
+| `exec_run` | Execute shell commands |
 | `exec_install` | Install packages (apt, pip, npm, docker) |
 | `exec_service` | Manage systemd services |
 | `exec_status` | Server health (disk, RAM, CPU, uptime) |
 
-All commands are audit-logged with user, command, output, exit code, and duration. Configurable timeout (default 120s), scope (`admin-only`, `allowlist`, `all`), and output capture limit.
+All commands are audit-logged with user, command, output, exit code, and duration. Configurable mode (`off`, `allowlist`, `yolo`), timeout (default 120s), scope (`admin-only`, `allowlist`, `all`), sandbox mode, and output capture limit.
 
 ```yaml
 capabilities:
   exec:
-    mode: "yolo"          # off | yolo
+    mode: "allowlist"     # off | allowlist | yolo
     scope: "admin-only"   # admin-only | allowlist | all
+    command_allowlist: ["git", "ls", "npm"]
+    sandbox_mode: "unrestricted"  # unrestricted | sandboxed | dry-run
     limits:
       timeout: 120        # seconds (1-3600)
+      max_output: 50000
+    audit:
+      log_commands: true
 ```
 
 ### Admin Commands
@@ -561,10 +621,10 @@ src/
 ├── config/                 # Configuration
 │   ├── schema.ts           # Zod schemas + validation
 │   ├── providers.ts        # Multi-provider LLM registry (16 providers)
-│   └── model-catalog.ts    # Shared model catalog (70+ models across all providers)
+│   └── model-catalog.ts    # Shared model catalog (100+ model presets across all providers)
 ├── webui/                  # Optional web dashboard
 │   ├── server.ts           # Hono server, auth middleware, static serving
-│   └── routes/             # 14 route groups (status, tools, logs, memory, soul, plugins, mcp, tasks, workspace, config, marketplace, hooks, ton-proxy, setup)
+│   └── routes/             # 42 authenticated API route groups
 ├── api/                    # Management API (HTTPS control plane)
 │   ├── server.ts           # Hono HTTPS server, TLS, middleware stack
 │   ├── bootstrap.ts        # API-only mode (no config needed)
@@ -576,7 +636,7 @@ src/
 ├── templates/              # Workspace template files (SOUL.md, etc.)
 └── cli/                    # CLI commands (setup, config, doctor, mcp)
 
-web/                        # React + Vite frontend (11 pages)
+web/                        # React + Vite frontend (23 pages)
 packages/sdk/               # Published @teleton-agent/sdk
 ```
 
@@ -595,7 +655,10 @@ packages/sdk/               # Published @teleton-agent/sdk
 | **Wallet protection** | File permissions `0o600`, KeyPair cached (single PBKDF2), mnemonic never exposed to plugins |
 | **Memory protection** | Memory writes blocked in group chats to prevent poisoning |
 | **Payment security** | `INSERT OR IGNORE` on tx hashes prevents double-spend, atomic status transitions prevent race conditions |
-| **Exec audit** | All YOLO mode commands logged to `exec_audit` table with user, command, output, and timestamps |
+| **Exec allowlist** | Allowlist mode permits exact program matches and rejects shell operators, redirects, pipes, and command substitution |
+| **Exec audit** | All exec commands logged to `exec_audit` table with user, command, output, and timestamps |
+| **WebUI auth** | Auth token hashes, one-time exchange tokens, HttpOnly cookies, and CSRF checks on mutations |
+| **Network ingress** | Ed25519 signatures, recipient checks, allowlist/blocklist enforcement, replay protection, and clock-skew checks |
 | **Pino redaction** | Structured logging with automatic redaction of apiKey, password, secret, token, mnemonic fields |
 | **Tool scoping** | Financial tools DM-only, moderation group-only, admin-only policies, per-chat permissions configurable at runtime |
 
@@ -619,7 +682,7 @@ Do not open public issues for security vulnerabilities. Contact maintainers (t.m
 ### Setup
 
 ```bash
-git clone https://github.com/TONresistor/teleton-agent.git
+git clone https://github.com/xlabtg/teleton-agent.git
 cd teleton-agent
 npm install
 npm run setup
@@ -655,6 +718,8 @@ Full documentation is available in the [`docs/`](docs/) directory:
 | [Telegram Setup](docs/telegram-setup.md) | API credentials, policies, 2FA, admin commands |
 | [TON Wallet](docs/ton-wallet.md) | Wallet setup, DEX trading, security |
 | [Management API](docs/management-api.md) | HTTPS API, bootstrap mode, authentication, endpoints |
+| [WebUI User Guide](docs/user-guide/README.md) | Bilingual guide to the current WebUI pages and workflows |
+| [Agent Network](docs/agent-network.md) | Signed inter-agent protocol, trust levels, and ingress setup |
 | [Semantic Memory](docs/semantic-memory.md) | Upstash Vector modes, fallback, prioritization, retention |
 | [Upstash Vector Setup](docs/upstash-vector-setup.md) | Step-by-step: provision index with matching dimension, connect Teleton, recover from mismatches |
 
@@ -674,15 +739,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 ## Contributors
 
-<a href="https://github.com/TONresistor/teleton-agent/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=TONresistor/teleton-agent" />
+<a href="https://github.com/xlabtg/teleton-agent/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=xlabtg/teleton-agent" />
 </a>
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details. This fork keeps the original MIT license notice intact; keep the notice with redistributions and derivative work.
 
 ---
 
@@ -690,6 +755,8 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ### Built With
 
+- Fork maintenance: [xlabtg/teleton-agent](https://github.com/xlabtg/teleton-agent)
+- Original upstream: [TONresistor/teleton-agent](https://github.com/TONresistor/teleton-agent)
 - [pi-ai](https://github.com/mariozechner/pi-ai) - Multi-provider LLM SDK
 - [GramJS](https://gram.js.org/) - Telegram MTProto library
 - [Grammy](https://grammy.dev/) - Telegram Bot API framework
@@ -705,7 +772,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/TONresistor/teleton-agent/issues)
+- **Issues**: [GitHub Issues](https://github.com/xlabtg/teleton-agent/issues)
 - **Channel**: [@teletonagents](https://t.me/teletonagents)
 - **Group Chat**: [@teletonagentHQ](https://t.me/teletonagentHQ)
 - **Contact**: [@zkproof](https://t.me/zkproof)
