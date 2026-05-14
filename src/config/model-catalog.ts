@@ -430,6 +430,21 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
   ],
   nvidia: [
     {
+      value: "google/gemma-3n-e4b-it",
+      name: "gemma-3n-e4b-it",
+      description: "Current NVIDIA text, audio and image input model",
+    },
+    {
+      value: "minimaxai/minimax-m2.7",
+      name: "MiniMax M2.7",
+      description: "Current NVIDIA preview coding model",
+    },
+    {
+      value: "z-ai/glm-4.7",
+      name: "GLM-4.7",
+      description: "Current NVIDIA preview Tool+Calling model",
+    },
+    {
       value: "meta/llama-3.1-8b-instruct",
       name: "Llama 3.1 8B Instruct",
       description: "128K ctx, chat + tools + vision, FREE preview",
