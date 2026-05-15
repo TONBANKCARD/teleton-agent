@@ -212,6 +212,11 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       description: "Auto-selects available free model, 200K ctx, FREE",
     },
     {
+      value: "inclusionai/ring-2.6-1t:free",
+      name: "inclusionAI: Ring-2.6-1T (free)",
+      description: "262K ctx, FREE",
+    },
+    {
       value: "qwen/qwen3.6-plus:free",
       name: "Qwen3.6 Plus (free)",
       description: "1M ctx, MoE, SWE-bench 78.8, FREE",
