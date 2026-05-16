@@ -49,8 +49,12 @@ function parseWav(buf: Buffer): ParsedWav {
 
   while (offset + 8 <= buf.length) {
     const id = buf.toString("ascii", offset, offset + 4);
-    const size = buf.readUInt32LE(offset + 4);
     const start = offset + 8;
+    // 0xFFFFFFFF is a streaming/unknown-size placeholder used by some TTS providers
+    // (e.g. Groq) that write the WAV header before the total audio length is known.
+    // Treat it as "rest of buffer" rather than rejecting the file.
+    const rawSize = buf.readUInt32LE(offset + 4);
+    const size = rawSize === 0xffffffff ? buf.length - start : rawSize;
     if (start + size > buf.length) {
       throw new Error(`WAV parse error: chunk '${id}' size ${size} exceeds buffer`);
     }
