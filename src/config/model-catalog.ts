@@ -212,9 +212,14 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       description: "Auto-selects available free model, 200K ctx, FREE",
     },
     {
+      value: "openrouter/owl-alpha",
+      name: "Owl Alpha (free)",
+      description: "262K ctx, FREE",
+    },
+    {
       value: "inclusionai/ring-2.6-1t:free",
       name: "inclusionAI: Ring-2.6-1T (free)",
-      description: "262K ctx, FREE",
+      description: "Context 1.05M Max Output 262K, FREE",
     },
     {
       value: "qwen/qwen3.6-plus:free",
