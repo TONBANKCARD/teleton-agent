@@ -19,6 +19,8 @@ import { createDepsAdapter } from "./deps.js";
 import type { ApiConfig } from "../config/schema.js";
 import type { StateChangeEvent } from "../agent/lifecycle.js";
 import { createProblem } from "./schemas/common.js";
+import { buildOpenApiSpec, extractRoutes } from "./openapi/spec.js";
+import { swaggerUiHtml } from "./openapi/swagger-ui.js";
 
 // Middleware
 import { requestId } from "./middleware/request-id.js";
@@ -133,11 +135,18 @@ export class ApiServer {
   private tls: TlsCert | null = null;
   private apiKey: string | null = null;
   private keyHash: string;
+  private docsEnabled: boolean;
+  private built = false;
+  private cachedSpec: Record<string, unknown> | null = null;
 
   constructor(deps: ApiServerDeps, config: ApiConfig) {
     this.deps = deps;
     this.config = config;
     this.app = new Hono<{ Bindings: HttpBindings }>();
+
+    // Interactive Swagger UI is served only when explicitly enabled or outside
+    // production (issue #495: "dev mode only, or behind a flag").
+    this.docsEnabled = config.docs_enabled === true || process.env.NODE_ENV !== "production";
 
     // Determine key hash: use configured or generate new
     if (config.key_hash) {
@@ -146,6 +155,36 @@ export class ApiServer {
       this.apiKey = generateApiKey();
       this.keyHash = hashApiKey(this.apiKey);
     }
+  }
+
+  /**
+   * Build the Hono app (middleware + routes) without binding a network server.
+   *
+   * Idempotent. Reused by {@link start} at runtime and by the static OpenAPI
+   * generator / tests, so all three share one source of truth for the route
+   * surface.
+   */
+  buildApp(): Hono<{ Bindings: HttpBindings }> {
+    if (!this.built) {
+      this.setupMiddleware();
+      this.setupRoutes();
+      this.built = true;
+    }
+    return this.app;
+  }
+
+  /**
+   * Build (and memoise) the OpenAPI 3.1 document from the live router so the
+   * spec can never drift from the mounted routes.
+   */
+  getOpenApiSpec(): Record<string, unknown> {
+    this.buildApp();
+    if (!this.cachedSpec) {
+      this.cachedSpec = buildOpenApiSpec(extractRoutes(this.app), {
+        serverUrl: `https://localhost:${this.config.port}`,
+      });
+    }
+    return this.cachedSpec;
   }
 
   /** Get current API key hash (for persisting in config) */
@@ -210,6 +249,13 @@ export class ApiServer {
     // Health probes at root (no auth)
     this.app.get("/healthz", (c) => c.json({ status: "ok" }));
 
+    // Interactive docs (dev mode / behind a flag). Served outside the /v1/*
+    // auth scope so the Swagger UI page can fetch its own spec without a token.
+    if (this.docsEnabled) {
+      this.app.get("/api/openapi.json", (c) => c.json(this.getOpenApiSpec()));
+      this.app.get("/api/docs", (c) => c.html(swaggerUiHtml("/api/openapi.json")));
+    }
+
     this.app.get("/readyz", (c) => {
       const lifecycle = this.deps.lifecycle;
       if (!lifecycle) {
@@ -240,18 +286,8 @@ export class ApiServer {
     // Audit logging
     this.app.use("/v1/*", auditMiddleware);
 
-    // OpenAPI spec endpoint
-    this.app.get("/v1/openapi.json", (c) => {
-      return c.json({
-        openapi: "3.1.0",
-        info: {
-          title: "Teleton Management API",
-          version: "1.0.0",
-          description: "HTTPS management API for remote teleton agent administration",
-        },
-        servers: [{ url: `https://localhost:${this.config.port}` }],
-      });
-    });
+    // OpenAPI spec endpoint — built dynamically from the live router.
+    this.app.get("/v1/openapi.json", (c) => c.json(this.getOpenApiSpec()));
 
     // Adapt deps for existing WebUI route factories
     const adaptedDeps = createDepsAdapter(this.deps);
@@ -480,8 +516,7 @@ export class ApiServer {
     this.tls = tls;
 
     // Setup app
-    this.setupMiddleware();
-    this.setupRoutes();
+    this.buildApp();
 
     return new Promise((resolve, reject) => {
       try {
