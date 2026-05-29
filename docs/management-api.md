@@ -9,6 +9,7 @@ It runs on port `7778` by default, uses self-signed TLS, and authenticates reque
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [API Reference (OpenAPI)](#api-reference-openapi)
 - [Bootstrap Mode](#bootstrap-mode)
 - [Authentication](#authentication)
 - [TLS Certificates](#tls-certificates)
@@ -63,6 +64,43 @@ curl -k https://localhost:7778/v1/agent/status \
 ```
 
 > **Note**: `-k` skips TLS verification for self-signed certs. For production, pin the certificate fingerprint instead (see [TLS Certificates](#tls-certificates)).
+
+---
+
+## API Reference (OpenAPI)
+
+The complete, machine-readable API reference is published as an OpenAPI 3.1 document covering **every `/v1` endpoint**. It is generated directly from the live router, so it can never drift from the implementation, and is linted in CI with `redocly lint`.
+
+| Artifact | Location |
+|----------|----------|
+| OpenAPI spec (JSON) | [`docs/api-reference/openapi.json`](api-reference/openapi.json) |
+| OpenAPI spec (YAML) | [`docs/api-reference/openapi.yaml`](api-reference/openapi.yaml) |
+| Static Swagger UI | [`docs/api-reference/index.html`](api-reference/index.html) |
+
+### Interactive docs at runtime
+
+When the server runs in development (`NODE_ENV != production`) or with `api.docs_enabled: true`, interactive Swagger UI is served by the agent itself:
+
+- **`GET /api/docs`** — Swagger UI (unauthenticated)
+- **`GET /api/openapi.json`** — the spec (unauthenticated)
+- **`GET /v1/openapi.json`** — the same spec behind bearer auth
+
+```yaml
+api:
+  enabled: true
+  docs_enabled: true   # serve Swagger UI at /api/docs even in production
+```
+
+> The `/api/docs` and `/api/openapi.json` endpoints are exposed only as documentation plumbing and are intentionally excluded from the spec itself.
+
+### Regenerating the spec
+
+```bash
+npm run generate:openapi   # rewrites docs/api-reference/{openapi.json,openapi.yaml,index.html}
+npm run lint:openapi       # validates the spec with redocly
+```
+
+CI fails if the committed artifacts are out of date, so regenerate and commit whenever routes change.
 
 ---
 

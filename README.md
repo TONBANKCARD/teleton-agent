@@ -41,7 +41,7 @@
 
 ## Current Fork Status
 
-Current fork version: `0.8.19`.
+Current fork version: `0.8.20`.
 
 This README reflects the `xlabtg/teleton-agent` fork through merged PR [#480](https://github.com/xlabtg/teleton-agent/pull/480) / closed issue [#479](https://github.com/xlabtg/teleton-agent/issues/479). It was refreshed from the closed work history available at issue [#481](https://github.com/xlabtg/teleton-agent/issues/481): 236 closed issues and the 200 most recent merged pull requests as of the latest analyzed run.
 
@@ -718,6 +718,7 @@ Full documentation is available in the [`docs/`](docs/) directory:
 | [Telegram Setup](docs/telegram-setup.md) | API credentials, policies, 2FA, admin commands |
 | [TON Wallet](docs/ton-wallet.md) | Wallet setup, DEX trading, security |
 | [Management API](docs/management-api.md) | HTTPS API, bootstrap mode, authentication, endpoints |
+| [API Reference (OpenAPI)](docs/api-reference/) | OpenAPI 3.1 spec for every `/v1` endpoint + interactive Swagger UI |
 | [WebUI User Guide](docs/user-guide/README.md) | Bilingual guide to the current WebUI pages and workflows |
 | [Agent Network](docs/agent-network.md) | Signed inter-agent protocol, trust levels, and ingress setup |
 | [Semantic Memory](docs/semantic-memory.md) | Upstash Vector modes, fallback, prioritization, retention |
