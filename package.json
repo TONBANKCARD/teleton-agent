@@ -54,6 +54,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "validate:seo": "node scripts/validate-seo.mjs",
+    "test:seo": "node --test scripts/__tests__/",
     "typecheck": "tsc --noEmit",
     "knip": "knip",
     "circular": "madge --circular --no-spinner --no-color --extensions ts --ts-config tsconfig.json src/",
