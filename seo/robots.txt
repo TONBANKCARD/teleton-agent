@@ -1,0 +1,18 @@
+# Teleton Agent — robots.txt
+# Deploy at the web root of the public host, e.g. https://teletonagent.dev/robots.txt
+#
+# Policy: allow crawling of public marketing + documentation surfaces; keep the
+# private, authenticated operator console out of the index. The operator WebUI
+# additionally sends `noindex` via a <meta name="robots"> tag (see web/index.html).
+
+User-agent: *
+Allow: /
+
+# Private operator console / control plane — must never be indexed.
+Disallow: /api/
+Disallow: /setup
+Disallow: /setup/
+Disallow: /login
+
+# Sitemap location (update host on deployment).
+Sitemap: https://teletonagent.dev/sitemap.xml
