@@ -16,8 +16,11 @@ host changes, update it in `sitemap.xml`, `robots.txt`, and the meta tags in
 
 ## Deployment
 
-These files describe the **public** site, which is hosted separately from this
-repository. To deploy:
+These files describe the **public** site. The landing page itself lives in
+[`site/`](../site/) (see [issue #491](https://github.com/xlabtg/teleton-agent/issues/491))
+and ships its own root-level `robots.txt` / `sitemap.xml`; the assets here cover
+the broader docs + TON/crypto ecosystem. To deploy these ecosystem assets to the
+public host:
 
 1. Copy `sitemap.xml` and `robots.txt` to the web root of the public host so
    they resolve at:
