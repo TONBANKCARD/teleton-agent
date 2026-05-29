@@ -1,6 +1,6 @@
 {
   "name": "teleton",
-  "version": "0.8.19",
+  "version": "0.8.20",
   "workspaces": [
     "packages/*"
   ],
@@ -54,6 +54,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "npm run build:web && playwright test",
     "typecheck": "tsc --noEmit",
     "knip": "knip",
     "circular": "madge --circular --no-spinner --no-color --extensions ts --ts-config tsconfig.json src/",
@@ -96,6 +97,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.50.0",
     "@ston-fi/api": "^0.30.0",
     "@ston-fi/sdk": "^2.7.0",
     "@types/better-sqlite3": "^7.6.11",
