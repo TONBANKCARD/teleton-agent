@@ -8,6 +8,7 @@ export default defineConfig({
       "src/**/__tests__/**/*.test.ts",
       "web/src/**/__tests__/**/*.test.ts",
       "packages/sdk/src/**/__tests__/**/*.test.ts",
+      "benchmarks/**/__tests__/**/*.test.ts",
     ],
     coverage: {
       provider: "v8",
