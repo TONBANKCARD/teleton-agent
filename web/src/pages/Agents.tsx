@@ -20,6 +20,7 @@ import {
   type UpdateAgentInput,
 } from "../lib/api";
 import { toast } from "../lib/toast-store";
+import { useTranslation } from "react-i18next";
 
 interface AgentFormState {
   name: string;
@@ -1092,6 +1093,7 @@ const STATE_COLORS: Record<AgentOverview["state"], string> = {
 };
 
 export function Agents() {
+  const { t } = useTranslation();
   const [agents, setAgents] = useState<AgentOverview[]>([]);
   const [archetypes, setArchetypes] = useState<AgentArchetype[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1401,10 +1403,8 @@ export function Agents() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       <div className="header" style={{ marginBottom: 0 }}>
-        <h1>Agents</h1>
-        <p>
-          Run isolated Telegram runtimes with explicit mode, policy, restart, and inbox controls.
-        </p>
+        <h1>{t('pages.agents.title')}</h1>
+        <p>{t('pages.agents.subtitle')}</p>
       </div>
 
       {error && (

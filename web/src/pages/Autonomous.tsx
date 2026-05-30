@@ -12,6 +12,7 @@ import {
 } from "../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
 import { NaturalLanguageParser } from "../components/NaturalLanguageParser";
+import { useTranslation } from "react-i18next";
 
 const STATUS_COLORS: Record<AutonomousTaskStatus, string> = {
   pending: "#f0ad4e",
@@ -791,6 +792,7 @@ function TaskDetailPanel({
 }
 
 export function Autonomous() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [tasks, setTasks] = useState<AutonomousTaskData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -874,11 +876,8 @@ export function Autonomous() {
         }}
       >
         <div>
-          <h1>Autonomous Mode</h1>
-          <p>
-            Self-managed tasks that decompose a goal, execute actions, and adapt — within configured
-            guardrails.
-          </p>
+          <h1>{t('pages.autonomous.title')}</h1>
+          <p>{t('pages.autonomous.subtitle')}</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <label

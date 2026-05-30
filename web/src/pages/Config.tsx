@@ -16,6 +16,7 @@ import { InfoTip } from '../components/InfoTip';
 import { ExportImportPanel } from '../components/ExportImportPanel';
 import { MtprotoSettingsPanel } from '../components/MtprotoSettingsPanel';
 import { YoloSettingsPanel } from '../components/YoloSettingsPanel';
+import { useTranslation } from "react-i18next";
 
 const TABS = [
   { id: 'llm', label: 'LLM' },
@@ -298,6 +299,7 @@ function HeartbeatTab({ config }: { config: ReturnType<typeof useConfigState> })
 }
 
 export function Config() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'llm';
@@ -353,8 +355,8 @@ export function Config() {
   return (
     <div>
       <div className="header">
-        <h1>Configuration</h1>
-        <p>Manage settings and API keys</p>
+        <h1>{t('pages.config.title')}</h1>
+        <p>{t('pages.config.subtitle')}</p>
       </div>
 
       {config.error && (

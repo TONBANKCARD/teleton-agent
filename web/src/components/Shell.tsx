@@ -1,5 +1,6 @@
 import { ReactNode, useState, useCallback, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
 
 interface ShellProps {
@@ -10,6 +11,7 @@ interface ShellProps {
 
 export function Shell({ sidebar, topBar, children }: ShellProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -23,7 +25,7 @@ export function Shell({ sidebar, topBar, children }: ShellProps) {
   return (
     <div className="container">
       {/* Skip navigation link for accessibility */}
-      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <a href="#main-content" className="skip-link">{t("common.skipToContent")}</a>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
@@ -34,7 +36,7 @@ export function Shell({ sidebar, topBar, children }: ShellProps) {
         />
       )}
 
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} aria-label="Main navigation">
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`} aria-label={t("common.mainNavigation")}>
         <div className="sidebar-brand">
           <img src={theme === 'light' ? '/logo_light.png' : '/logo_dark.png'} alt="Teleton" style={{ height: '64px' }} />
         </div>
@@ -47,7 +49,7 @@ export function Shell({ sidebar, topBar, children }: ShellProps) {
           <button
             className="hamburger-btn"
             onClick={() => setSidebarOpen((o) => !o)}
-            aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-label={sidebarOpen ? t("common.closeNavMenu") : t("common.openNavMenu")}
             aria-expanded={sidebarOpen}
             aria-controls="main-sidebar"
           >

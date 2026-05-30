@@ -3,8 +3,10 @@ import { useConfigState } from '../hooks/useConfigState';
 import { logStore } from '../lib/log-store';
 import { api, StatusData } from '../lib/api';
 import { DashboardGrid } from '../components/widgets/DashboardGrid';
+import { useTranslation } from 'react-i18next';
 
 export function Dashboard() {
+  const { t } = useTranslation();
   const {
     loading, error, setError, saveSuccess, status, stats,
     getLocal, getServer, setLocal, cancelLocal, saveConfig,
@@ -30,8 +32,8 @@ export function Dashboard() {
     logStore.connect();
   }, []);
 
-  if (loading) return <div className="loading">Loading...</div>;
-  if (!status || !stats) return <div className="alert error">Failed to load dashboard data</div>;
+  if (loading) return <div className="loading">{t('common.loading')}</div>;
+  if (!status || !stats) return <div className="alert error">{t('dashboard.loadError')}</div>;
 
   const currentStatus = liveStatus ?? status;
 

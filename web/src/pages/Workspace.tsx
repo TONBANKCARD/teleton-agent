@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { api, FileEntry, WorkspaceInfo } from '../lib/api';
 import { useConfirm } from '../components/ConfirmDialog';
+import { useTranslation } from "react-i18next";
 
 function formatSize(bytes: number): string {
   if (bytes === 0) return '—';
@@ -28,6 +29,7 @@ function isBinaryFile(path: string): boolean {
 }
 
 export function Workspace() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [currentPath, setCurrentPath] = useState('');
   const [entries, setEntries] = useState<FileEntry[]>([]);
@@ -197,9 +199,9 @@ export function Workspace() {
   return (
     <div>
       <div className="header">
-        <h1>Workspace</h1>
+        <h1>{t('pages.workspace.title')}</h1>
         <p>
-          Browse and manage agent workspace files
+          {t('pages.workspace.subtitle')}
           {info && (
             <span style={{ marginLeft: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
               {info.totalFiles} files · {formatSize(info.totalSize)}

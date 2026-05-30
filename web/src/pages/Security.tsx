@@ -15,6 +15,7 @@ import {
   type SecuritySettings,
   type SecurityValidationLogEntry,
 } from "../lib/api";
+import { useTranslation } from "react-i18next";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1624,6 +1625,7 @@ function SecretsSection() {
 // ── Main Security Page ────────────────────────────────────────────────────────
 
 export function Security() {
+  const { t } = useTranslation();
   type SecurityTab = "trail" | "zero_trust" | "log" | "settings" | "secrets";
   const [tab, setTab] = useState<SecurityTab>("trail");
   const tabs: Array<{ id: SecurityTab; label: string }> = [
@@ -1637,8 +1639,8 @@ export function Security() {
   return (
     <div className="dashboard-root">
       <div className="header">
-        <h1>Security Center</h1>
-        <p>Audit trail, zero-trust policies, security settings, and secrets management</p>
+        <h1>{t('pages.security.title')}</h1>
+        <p>{t('pages.security.subtitle')}</p>
       </div>
 
       <div

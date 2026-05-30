@@ -7,6 +7,7 @@ import {
   MemoryCleanupResult,
 } from "../lib/api";
 import { KnowledgeGraph } from "../components/KnowledgeGraph";
+import { useTranslation } from "react-i18next";
 
 function formatDate(epoch: number): string {
   return new Date(epoch * 1000).toLocaleDateString(undefined, {
@@ -39,6 +40,7 @@ function reasonLabel(reason: string): string {
 }
 
 export function Memory() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"sources" | "graph" | "priority">("sources");
   const [filter, setFilter] = useState("");
   const [sources, setSources] = useState<MemorySourceFile[]>([]);
@@ -164,8 +166,8 @@ export function Memory() {
   return (
     <div>
       <div className="header">
-        <h1>Memory</h1>
-        <p>Browse indexed knowledge sources and graph relationships</p>
+        <h1>{t('pages.memory.title')}</h1>
+        <p>{t('pages.memory.subtitle')}</p>
       </div>
 
       <div className="tabs">

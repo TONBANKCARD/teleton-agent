@@ -15,6 +15,7 @@ import {
   type FeedbackPreferenceProfile,
   type FeedbackTheme,
 } from "../lib/api";
+import { useTranslation } from "react-i18next";
 
 function fmtPercent(value: number | null | undefined): string {
   if (value == null) return "—";
@@ -81,6 +82,7 @@ function PreferenceSelect({
 }
 
 export function Feedback() {
+  const { t } = useTranslation();
   const [periodDays, setPeriodDays] = useState(30);
   const [analytics, setAnalytics] = useState<FeedbackAnalyticsData | null>(null);
   const [themes, setThemes] = useState<FeedbackTheme[]>([]);
@@ -135,8 +137,8 @@ export function Feedback() {
   return (
     <div>
       <div className="header">
-        <h1>Feedback</h1>
-        <p>Response quality, themes, and learned preferences</p>
+        <h1>{t('pages.feedback.title')}</h1>
+        <p>{t('pages.feedback.subtitle')}</p>
       </div>
 
       {error && (

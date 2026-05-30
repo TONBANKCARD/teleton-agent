@@ -5,6 +5,7 @@ import {
   WebhookDeliveryData,
   WebhookRegistrationData,
 } from "../lib/api";
+import { useTranslation } from "react-i18next";
 
 function fmtTime(value: string | number | null): string {
   if (value === null) return "-";
@@ -26,6 +27,7 @@ function statusColor(status: WebhookDeliveryData["status"]): string {
 }
 
 export function Events() {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<EventLogEntry[]>([]);
   const [eventTypes, setEventTypes] = useState<string[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookRegistrationData[]>([]);
@@ -165,8 +167,8 @@ export function Events() {
   return (
     <div>
       <div className="header">
-        <h1>Events</h1>
-        <p>Event log, webhooks, delivery history, and replay</p>
+        <h1>{t('pages.events.title')}</h1>
+        <p>{t('pages.events.subtitle')}</p>
       </div>
 
       {error && (

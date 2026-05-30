@@ -1,8 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Shell } from "./Shell";
 import { AgentControl } from "./AgentControl";
 import { AgentSwitcher } from "./AgentSwitcher";
 import { NotificationBell } from "./NotificationBell";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { logout } from "../lib/api";
 import { useTheme } from "../hooks/useTheme";
 import { openCommandPalette } from "./CommandPalette";
@@ -11,6 +13,7 @@ function DashboardNav() {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     await logout();
@@ -23,91 +26,94 @@ function DashboardNav() {
         <button
           className="cmd-k-hint"
           onClick={openCommandPalette}
-          title="Open command palette (Ctrl+K)"
-          aria-label="Open command palette"
+          title={t("nav.commandPaletteTitle")}
+          aria-label={t("nav.commandPaletteAria")}
           style={{ width: "100%", marginBottom: "4px", justifyContent: "space-between" }}
         >
-          <span>Search...</span>
+          <span>{t("nav.search")}</span>
           <span>
             <kbd>⌘</kbd>
             <kbd>K</kbd>
           </span>
         </button>
         <Link to="/" className={isActive("/") ? "active" : ""}>
-          Dashboard
+          {t("nav.dashboard")}
         </Link>
         <Link to="/agents" className={isActive("/agents") ? "active" : ""}>
-          Agents
+          {t("nav.agents")}
         </Link>
         <Link to="/tools" className={isActive("/tools") ? "active" : ""}>
-          Tools
+          {t("nav.tools")}
         </Link>
         <Link to="/plugins" className={isActive("/plugins") ? "active" : ""}>
-          Plugins
+          {t("nav.plugins")}
         </Link>
         <Link to="/soul" className={isActive("/soul") ? "active" : ""}>
-          Soul
+          {t("nav.soul")}
         </Link>
         <Link to="/memory" className={isActive("/memory") ? "active" : ""}>
-          Memory
+          {t("nav.memory")}
         </Link>
         <Link to="/workspace" className={isActive("/workspace") ? "active" : ""}>
-          Workspace
+          {t("nav.workspace")}
         </Link>
         <Link to="/tasks" className={isActive("/tasks") ? "active" : ""}>
-          Tasks
+          {t("nav.tasks")}
         </Link>
         <Link to="/workflows" className={isActive("/workflows") ? "active" : ""}>
-          Workflows
+          {t("nav.workflows")}
         </Link>
         <Link to="/pipelines" className={isActive("/pipelines") ? "active" : ""}>
-          Pipelines
+          {t("nav.pipelines")}
         </Link>
         <Link to="/events" className={isActive("/events") ? "active" : ""}>
-          Events
+          {t("nav.events")}
         </Link>
         <Link to="/mcp" className={isActive("/mcp") ? "active" : ""}>
-          MCP
+          {t("nav.mcp")}
         </Link>
         <Link to="/integrations" className={isActive("/integrations") ? "active" : ""}>
-          Integrations
+          {t("nav.integrations")}
         </Link>
         <Link to="/network" className={isActive("/network") ? "active" : ""}>
-          Network
+          {t("nav.network")}
         </Link>
         <Link to="/hooks" className={isActive("/hooks") ? "active" : ""}>
-          Hooks
+          {t("nav.hooks")}
         </Link>
         <Link to="/sessions" className={isActive("/sessions") ? "active" : ""}>
-          Sessions
+          {t("nav.sessions")}
         </Link>
         <Link to="/analytics" className={isActive("/analytics") ? "active" : ""}>
-          Analytics
+          {t("nav.analytics")}
         </Link>
         <Link to="/feedback" className={isActive("/feedback") ? "active" : ""}>
-          Feedback
+          {t("nav.feedback")}
         </Link>
         <Link to="/security" className={isActive("/security") ? "active" : ""}>
-          Security
+          {t("nav.security")}
         </Link>
         <Link to="/self-improve" className={isActive("/self-improve") ? "active" : ""}>
-          Self-Improve
+          {t("nav.selfImprove")}
         </Link>
         <Link to="/autonomous" className={isActive("/autonomous") ? "active" : ""}>
-          Autonomous
+          {t("nav.autonomous")}
         </Link>
         <Link to="/config" className={isActive("/config") ? "active" : ""}>
-          Config
+          {t("nav.config")}
         </Link>
       </nav>
       <div style={{ marginTop: "auto" }}>
         <AgentSwitcher />
         <AgentControl />
         <div style={{ padding: "0 12px 14px" }}>
+          <div style={{ marginBottom: "8px" }}>
+            <LanguageSwitcher variant="block" />
+          </div>
           <button
             onClick={toggleTheme}
             className="btn-ghost"
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            title={theme === "dark" ? t("common.switchToLight") : t("common.switchToDark")}
             style={{
               width: "100%",
               fontSize: "13px",
@@ -141,7 +147,7 @@ function DashboardNav() {
                   <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
                   <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                 </svg>
-                Light Mode
+                {t("common.lightMode")}
               </>
             ) : (
               <>
@@ -158,12 +164,12 @@ function DashboardNav() {
                 >
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
-                Dark Mode
+                {t("common.darkMode")}
               </>
             )}
           </button>
           <button onClick={handleLogout} className="btn-ghost" style={{ width: "100%", fontSize: "13px" }}>
-            Logout
+            {t("common.logout")}
           </button>
           <div
             style={{

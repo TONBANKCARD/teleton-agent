@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import type { StructuredRule } from '../lib/api';
 import { RuleBuilder } from '../components/hooks/RuleBuilder';
 import { HookTestPanel } from '../components/HookTestPanel';
+import { useTranslation } from "react-i18next";
 
 interface TriggerEntry {
   id: string;
@@ -14,6 +15,7 @@ interface TriggerEntry {
 type Mode = 'basic' | 'advanced';
 
 export function Hooks() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('basic');
 
   // Blocklist state
@@ -228,8 +230,8 @@ export function Hooks() {
   return (
     <div>
       <div className="header">
-        <h1>Hooks</h1>
-        <p>Keyword rules and context injection triggers</p>
+        <h1>{t('pages.hooks.title')}</h1>
+        <p>{t('pages.hooks.subtitle')}</p>
       </div>
 
       {error && (

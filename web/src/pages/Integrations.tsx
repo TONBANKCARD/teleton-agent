@@ -8,6 +8,7 @@ import {
   IntegrationType,
 } from "../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
+import { useTranslation } from "react-i18next";
 
 const AUTH_TYPES: IntegrationAuthType[] = [
   "none",
@@ -69,6 +70,7 @@ function statusLabel(status: string): string {
 }
 
 export function Integrations() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [integrations, setIntegrations] = useState<IntegrationEntity[]>([]);
   const [catalog, setCatalog] = useState<IntegrationCatalogEntry[]>([]);
@@ -213,8 +215,8 @@ export function Integrations() {
       <div className="header">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h1>Integrations</h1>
-            <p>Shared external service registry, credentials, health, and execution</p>
+            <h1>{t('pages.integrations.title')}</h1>
+            <p>{t('pages.integrations.subtitle')}</p>
           </div>
           <button onClick={() => setShowAdd((value) => !value)} style={{ fontSize: "13px" }}>
             {showAdd ? "Cancel" : "+ Add Integration"}
