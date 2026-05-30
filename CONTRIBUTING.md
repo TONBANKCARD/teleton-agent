@@ -20,23 +20,23 @@ Thank you for your interest in contributing to Teleton Agent. This guide covers 
 
 ## Reporting Bugs
 
-Open a [GitHub Issue](https://github.com/TONresistor/teleton-agent/issues/new?template=bug_report.md) using the bug report template. Include:
+Open a [GitHub Issue](https://github.com/xlabtg/teleton-agent/issues/new?template=bug_report.yml) using the bug report form. Include:
 
 - A clear description of the problem
 - Steps to reproduce
 - Expected vs. actual behavior
 - Environment details (OS, Node.js version, teleton version, LLM provider)
 
-Search [existing issues](https://github.com/TONresistor/teleton-agent/issues) first to avoid duplicates.
+Search [existing issues](https://github.com/xlabtg/teleton-agent/issues) first to avoid duplicates.
 
 ## Suggesting Features
 
-Open a [GitHub Issue](https://github.com/TONresistor/teleton-agent/issues/new?template=feature_request.md) using the feature request template. Describe the use case, your proposed solution, and any alternatives you considered.
+Open a [GitHub Issue](https://github.com/xlabtg/teleton-agent/issues/new?template=feature_request.yml) using the feature request form. Describe the use case, your proposed solution, and any alternatives you considered. For early ideas or questions, use [GitHub Discussions](https://github.com/xlabtg/teleton-agent/discussions).
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/TONresistor/teleton-agent.git
+git clone https://github.com/xlabtg/teleton-agent.git
 cd teleton-agent
 npm install
 npm run dev
@@ -199,6 +199,13 @@ Because the `CHANGELOG.md` is generated from commit history, do **not** edit it 
 - Update documentation if you change user-facing behavior.
 - Do not include unrelated formatting changes or refactors.
 
+## Code of Conduct
+
+All contributors are expected to follow the
+[Code of Conduct](.github/CODE_OF_CONDUCT.md). Maintainers may moderate issues,
+pull requests, discussions, and other project spaces when behavior conflicts
+with the Code of Conduct.
+
 ## Code Style
 
 The project uses **ESLint** and **Prettier** with pre-configured rules. A pre-commit hook (via Husky + lint-staged) runs automatically on staged files.
@@ -274,4 +281,4 @@ Plugins are loaded from `~/.teleton/plugins/` at startup -- no rebuild required.
 
 ---
 
-Questions? Reach out on Telegram: [@ResistanceForum](https://t.me/ResistanceForum) or open a [discussion](https://github.com/TONresistor/teleton-agent/issues).
+Questions? Reach out on Telegram: [@teletonagentHQ](https://t.me/teletonagentHQ) or open a [discussion](https://github.com/xlabtg/teleton-agent/discussions).

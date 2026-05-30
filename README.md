@@ -42,7 +42,7 @@
 
 ## Current Fork Status
 
-Current fork version: `0.8.21`.
+Current fork version: `0.8.22`.
 
 This README reflects the `xlabtg/teleton-agent` fork through merged PR [#480](https://github.com/xlabtg/teleton-agent/pull/480) / closed issue [#479](https://github.com/xlabtg/teleton-agent/issues/479). It was refreshed from the closed work history available at issue [#481](https://github.com/xlabtg/teleton-agent/issues/481): 236 closed issues and the 200 most recent merged pull requests as of the latest analyzed run.
 
@@ -771,6 +771,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 4. Verify: `npm run typecheck && npm run lint && npm test`
 5. Open a Pull Request against `main`
 
+Community standards:
+
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+- [Governance](GOVERNANCE.md)
+- [Support](SUPPORT.md)
+- [GitHub Discussions](https://github.com/xlabtg/teleton-agent/discussions)
+
 ---
 
 ## Contributors
@@ -808,6 +815,7 @@ MIT License - see [LICENSE](LICENSE) for details. This fork keeps the original M
 
 ## Support
 
+- **Questions**: [GitHub Discussions](https://github.com/xlabtg/teleton-agent/discussions)
 - **Issues**: [GitHub Issues](https://github.com/xlabtg/teleton-agent/issues)
 - **Channel**: [@teletonagents](https://t.me/teletonagents)
 - **Group Chat**: [@teletonagentHQ](https://t.me/teletonagentHQ)
