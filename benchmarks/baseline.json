@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-05-30T02:36:46.455Z",
+  "node": "v20.20.2",
+  "platform": "linux",
+  "arch": "x64",
+  "cpus": 6,
+  "results": [
+    {
+      "key": "memory-search/N=100/knn top-10",
+      "suite": "memory-search",
+      "group": "N=100",
+      "task": "knn top-10",
+      "hz": 8612.620086005702,
+      "meanMs": 0.11610868586028304,
+      "p99Ms": 0.15338899999915157,
+      "samples": 4307
+    },
+    {
+      "key": "memory-search/N=1,000/knn top-10",
+      "suite": "memory-search",
+      "group": "N=1,000",
+      "task": "knn top-10",
+      "hz": 3559.7484396970294,
+      "meanMs": 0.2809187269663106,
+      "p99Ms": 0.327290000001085,
+      "samples": 1780
+    },
+    {
+      "key": "memory-search/N=10,000/knn top-10",
+      "suite": "memory-search",
+      "group": "N=10,000",
+      "task": "knn top-10",
+      "hz": 287.43683547544373,
+      "meanMs": 3.4790252207790946,
+      "p99Ms": 4.455298999999286,
+      "samples": 231
+    },
+    {
+      "key": "agentic-loop/schema-prep/sanitize tool schemas (8 tools)",
+      "suite": "agentic-loop",
+      "group": "schema-prep",
+      "task": "sanitize tool schemas (8 tools)",
+      "hz": 50097.59911896253,
+      "meanMs": 0.01996103640865872,
+      "p99Ms": 0.03409100000135368,
+      "samples": 25049
+    },
+    {
+      "key": "agentic-loop/result-handling/truncate large tool result (~10KB)",
+      "suite": "agentic-loop",
+      "group": "result-handling",
+      "task": "truncate large tool result (~10KB)",
+      "hz": 22807.46530178084,
+      "meanMs": 0.04384529305507344,
+      "p99Ms": 0.06604800000059186,
+      "samples": 11404
+    },
+    {
+      "key": "agentic-loop/dispatch/parse + dispatch 4 tasks (mocked)",
+      "suite": "agentic-loop",
+      "group": "dispatch",
+      "task": "parse + dispatch 4 tasks (mocked)",
+      "hz": 455245.703179913,
+      "meanMs": 0.0021966160098051495,
+      "p99Ms": 0.0035160000006726477,
+      "samples": 227623
+    },
+    {
+      "key": "dex-routing/address-prep/parse + normalise jetton addresses",
+      "suite": "dex-routing",
+      "group": "address-prep",
+      "task": "parse + normalise jetton addresses",
+      "hz": 228910.62104271317,
+      "meanMs": 0.004368517264270611,
+      "p99Ms": 0.008531999999831896,
+      "samples": 114456
+    },
+    {
+      "key": "dex-routing/amount-conversion/amount <-> base units (9 decimals)",
+      "suite": "dex-routing",
+      "group": "amount-conversion",
+      "task": "amount <-> base units (9 decimals)",
+      "hz": 1090862.6124238588,
+      "meanMs": 0.0009167057231689651,
+      "p99Ms": 0.0013519999993150122,
+      "samples": 545432
+    }
+  ]
+}

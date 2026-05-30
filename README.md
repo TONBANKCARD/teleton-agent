@@ -702,7 +702,31 @@ npm run typecheck   # Type checking
 npm run lint        # ESLint
 npm run test        # Vitest
 npm run format      # Prettier
+npm run bench       # Performance benchmarks (tinybench)
+npm run bench:check # Fail on > 20% performance regression
 ```
+
+---
+
+## Performance
+
+Teleton Agent publishes benchmarks for its critical paths so regressions are
+visible and operators can size hardware. The suite lives in
+[`benchmarks/`](benchmarks) and covers vector memory search (KNN over a
+`sqlite-vec` cosine index, N = 100 → 10 000), the agentic-loop per-turn overhead,
+and DEX routing prep. Opt-in tiers measure real DeDust quotes and LLM
+first-token latency.
+
+```bash
+npm run bench         # run all benchmarks and print a report
+npm run bench:check   # fail if a tracked metric regresses > 20%
+```
+
+On a 6-vCPU Linux runner, semantic search takes ~0.12 ms over 100 memories and
+~3.5 ms over 10 000. A CI job runs the suite for PRs touching `src/memory/`,
+`src/agent(s)/`, or `src/ton/` and flags > 20% regressions. See the
+[**Performance Benchmarks**](docs/benchmarks.md) guide for methodology and the
+full baseline.
 
 ---
 

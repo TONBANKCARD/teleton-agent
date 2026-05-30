@@ -39,3 +39,6 @@ piper-voices/
 # Local Playwright MCP traces / snapshots
 .playwright-mcp/
 
+# Benchmark run output (baseline.json is committed, ad-hoc results are not)
+benchmarks/results.json
+
