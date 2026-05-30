@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> **Note:** Starting from the next release, new entries in this file are
+> generated automatically by [release-please](https://github.com/googleapis/release-please-action)
+> from [Conventional Commits](https://www.conventionalcommits.org/). Do not edit
+> released sections by hand — write good commit messages instead (see
+> [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
+> note are preserved as the historical, manually-maintained record.
+
 ## [Unreleased]
 
 ### Deprecated
