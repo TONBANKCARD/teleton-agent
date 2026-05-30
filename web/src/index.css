@@ -3759,3 +3759,26 @@ button.btn-lg {
 .autonomous-indeterminate-bar {
   animation: autonomous-indeterminate 1.4s ease-in-out infinite;
 }
+
+/* --- WCAG 2.1 AA fixes (issue #499) --------------------------------------- */
+/* Brighter accent for text on the soft accent background (active nav item).   */
+/* #5b8cff on the blended #1b2136 surface is only 3.86:1; #8fb0ff reaches      */
+/* 5.45:1, clearing the WCAG AA 4.5:1 threshold for normal-size text.          */
+:root {
+  --accent-bright: #8fb0ff;
+}
+.nav-item.active {
+  color: var(--accent-bright);
+}
+/* Respect the reduced-motion preference (WCAG 2.3.3 / 2.2.2) and keep entrance */
+/* animations from interfering with axe colour-contrast sampling.              */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
