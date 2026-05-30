@@ -7,6 +7,7 @@ import {
   type SessionMessage,
 } from "../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
+import { useTranslation } from "react-i18next";
 
 function formatTs(ts: number): string {
   const d = new Date(ts);
@@ -600,6 +601,7 @@ function SessionDetail({
 }
 
 export function Sessions() {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -666,8 +668,8 @@ export function Sessions() {
   return (
     <div>
       <div className="header">
-        <h1>Sessions</h1>
-        <p>Chat history and conversation logs</p>
+        <h1>{t('pages.sessions.title')}</h1>
+        <p>{t('pages.sessions.subtitle')}</p>
       </div>
 
       {error && (

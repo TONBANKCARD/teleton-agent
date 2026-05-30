@@ -43,7 +43,8 @@
     "security": "Security",
     "selfImprove": "Self-Improve",
     "autonomous": "Autonomous",
-    "config": "Config"
+    "config": "Config",
+    "logs": "Logs"
   },
   "login": {
     "prompt": "Enter your authentication token to access the dashboard.",
@@ -56,9 +57,104 @@
   "dashboard": {
     "loadError": "Failed to load dashboard data"
   },
+  "pages": {
+    "agents": {
+      "title": "Agents",
+      "subtitle": "Run isolated Telegram runtimes with explicit mode, policy, restart, and inbox controls."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "subtitle": "Usage patterns, performance metrics, and cost analysis"
+    },
+    "autonomous": {
+      "title": "Autonomous Mode",
+      "subtitle": "Self-managed tasks that decompose a goal, execute actions, and adapt — within configured guardrails."
+    },
+    "config": {
+      "title": "Configuration",
+      "subtitle": "Manage settings and API keys"
+    },
+    "events": {
+      "title": "Events",
+      "subtitle": "Event log, webhooks, delivery history, and replay"
+    },
+    "feedback": {
+      "title": "Feedback",
+      "subtitle": "Response quality, themes, and learned preferences"
+    },
+    "hooks": {
+      "title": "Hooks",
+      "subtitle": "Keyword rules and context injection triggers"
+    },
+    "integrations": {
+      "title": "Integrations",
+      "subtitle": "Shared external service registry, credentials, health, and execution"
+    },
+    "mcp": {
+      "title": "MCP Servers",
+      "subtitle": "External tool servers connected via Model Context Protocol"
+    },
+    "memory": {
+      "title": "Memory",
+      "subtitle": "Browse indexed knowledge sources and graph relationships"
+    },
+    "network": {
+      "title": "Network",
+      "remoteAgents": "{{count}} remote agents"
+    },
+    "pipelines": {
+      "title": "Pipelines",
+      "subtitle": "Chain agent steps with dependencies, variables, retries, and durable run history"
+    },
+    "plugins": {
+      "title": "Plugins",
+      "subtitle": "Manage installed plugins and browse the marketplace"
+    },
+    "security": {
+      "title": "Security Center",
+      "subtitle": "Audit trail, zero-trust policies, security settings, and secrets management"
+    },
+    "selfImprove": {
+      "title": "🚀 Self-Improvement Center",
+      "subtitlePre": "Meta-orchestrator: delegate autonomous codebase analysis to an installed plugin (e.g. ",
+      "subtitlePost": ")."
+    },
+    "sessions": {
+      "title": "Sessions",
+      "subtitle": "Chat history and conversation logs"
+    },
+    "soul": {
+      "title": "Soul Editor",
+      "subtitle": "Edit system prompt files"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "subtitle": "Scheduled and queued agent tasks"
+    },
+    "tools": {
+      "title": "Tools",
+      "subtitle": "{{count}} built-in tools across {{modules}} modules"
+    },
+    "workflows": {
+      "title": "Workflows",
+      "subtitle": "Automate actions with time-based, webhook, and event triggers"
+    },
+    "workspace": {
+      "title": "Workspace",
+      "subtitle": "Browse and manage agent workspace files"
+    }
+  },
   "setup": {
     "back": "Back",
     "next": "Next",
-    "nextStep": "Next: {{step}}"
+    "nextStep": "Next: {{step}}",
+    "steps": {
+      "welcome": "Welcome",
+      "provider": "Provider",
+      "config": "Config",
+      "wallet": "Wallet",
+      "telegram": "Telegram",
+      "connect": "Connect"
+    }
   }
 }

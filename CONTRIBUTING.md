@@ -14,6 +14,7 @@ Thank you for your interest in contributing to Teleton Agent. This guide covers 
 - [Making Changes](#making-changes)
 - [Pull Request Process](#pull-request-process)
 - [Code Style](#code-style)
+- [WebUI Internationalization (i18n)](#webui-internationalization-i18n)
 - [Plugin Development](#plugin-development)
 - [Code of Conduct](#code-of-conduct)
 
@@ -214,6 +215,56 @@ Key conventions:
 - ES modules (`import`/`export`, not `require`)
 - Explicit return types on exported functions
 - Use `zod` for runtime validation of external inputs
+
+## WebUI Internationalization (i18n)
+
+The WebUI (`web/`) is fully internationalized with [i18next](https://www.i18next.com/) and [react-i18next](https://react.i18next.com/). It ships with English (`en`) and Russian (`ru`) and switches locale at runtime — no rebuild required.
+
+### How it works
+
+- **No hard-coded user-facing strings.** Every visible string is referenced via the `t('key')` function from the `useTranslation()` hook. Do not write literal UI text in JSX.
+- **Translations live in JSON.** Locale files are at `web/src/locales/<lang>/translation.json`, organized into namespaces (`common`, `nav`, `login`, `pages.*`, `setup.*`, …).
+- **English is the reference locale.** Every other locale must provide exactly the same set of keys.
+- **The locale switcher** (`web/src/components/LanguageSwitcher.tsx`) is available on every page. The choice is persisted in `localStorage` (`teleton-lang`) and auto-detected from `navigator.language` on first visit.
+
+### Adding or updating a translatable string
+
+1. Add the key to **`web/src/locales/en/translation.json`** (the reference).
+2. Add the same key to **every other locale** (currently `ru`) with the translated value.
+3. Reference it in the component:
+
+   ```tsx
+   import { useTranslation } from 'react-i18next';
+
+   function MyComponent() {
+     const { t } = useTranslation();
+     return <h1>{t('pages.example.title')}</h1>;
+   }
+   ```
+
+4. For dynamic values, use interpolation — the placeholder name must match across locales:
+
+   ```json
+   { "remoteAgents": "{{count}} remote agents" }
+   ```
+
+   ```tsx
+   t('pages.network.remoteAgents', { count: agents.length })
+   ```
+
+### Adding a new language
+
+1. Create `web/src/locales/<lang>/translation.json` by copying the English file and translating every value.
+2. Register the locale in `web/src/i18n.ts`: import the JSON, add it to `resources`, and add it to `SUPPORTED_LANGUAGES` / `LANGUAGE_LABELS`.
+3. Run `npm run check:i18n` to confirm 100% parity.
+
+### Verifying translations
+
+```bash
+cd web && npm run check:i18n
+```
+
+This compares each locale against the English reference and **fails** if any locale has missing keys, extra keys, or mismatched interpolation placeholders. The same check runs in CI (the `Check i18n translation parity` step), so a PR that forgets to translate a key will not pass.
 
 ## Plugin Development
 

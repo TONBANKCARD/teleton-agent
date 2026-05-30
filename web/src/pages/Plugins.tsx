@@ -3,6 +3,7 @@ import { api, ToolInfo, ModuleInfo, PluginManifest, MarketplacePlugin, Marketpla
 import { ToolRow } from '../components/ToolRow';
 import { Select } from '../components/Select';
 import { useConfirm } from '../components/ConfirmDialog';
+import { useTranslation } from "react-i18next";
 
 type Tab = 'installed' | 'marketplace';
 type DetailsTab = 'overview' | 'tools' | 'secrets';
@@ -293,6 +294,7 @@ function PluginDetailsModal({
 // ── Main Plugins page ─────────────────────────────────────────────────────────
 
 export function Plugins() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [tab, setTab] = useState<Tab>('installed');
   const [manifests, setManifests] = useState<PluginManifest[]>([]);
@@ -675,8 +677,8 @@ export function Plugins() {
   return (
     <div>
       <div className="header">
-        <h1>Plugins</h1>
-        <p>Manage installed plugins and browse the marketplace</p>
+        <h1>{t('pages.plugins.title')}</h1>
+        <p>{t('pages.plugins.subtitle')}</p>
       </div>
 
       {error && (

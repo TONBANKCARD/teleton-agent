@@ -8,6 +8,7 @@ import {
 } from '../lib/api';
 import { useConfirm } from '../components/ConfirmDialog';
 import { TaskDelegationPanel } from '../components/TaskDelegationPanel';
+import { useTranslation } from "react-i18next";
 
 type TaskStatus = TaskData['status'];
 type Task = TaskData;
@@ -170,6 +171,7 @@ function CorrectionTimeline({ corrections }: { corrections: CorrectionLogEntry[]
 }
 
 export function Tasks() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -417,8 +419,8 @@ export function Tasks() {
   return (
     <div>
       <div className="header">
-        <h1>Tasks</h1>
-        <p>Scheduled and queued agent tasks</p>
+        <h1>{t('pages.tasks.title')}</h1>
+        <p>{t('pages.tasks.subtitle')}</p>
       </div>
 
       {error && (

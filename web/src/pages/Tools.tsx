@@ -6,6 +6,7 @@ import { BulkActionBar } from '../components/BulkActionBar';
 import { Select } from '../components/Select';
 import { PillBar } from '../components/PillBar';
 import { estimateCostTier } from '../components/CostBadge';
+import { useTranslation } from "react-i18next";
 
 type StateFilter = 'all' | 'enabled' | 'disabled';
 type SortBy = 'name-asc' | 'name-desc' | 'module';
@@ -26,6 +27,7 @@ function highlight(text: string, query: string): JSX.Element {
 }
 
 export function Tools() {
+  const { t } = useTranslation();
   const [modules, setModules] = useState<ModuleInfo[]>([]);
   const [toolStats, setToolStats] = useState<Record<string, ToolUsageStats>>({});
   const [loading, setLoading] = useState(true);
@@ -331,8 +333,8 @@ export function Tools() {
   return (
     <div style={{ position: 'relative' }}>
       <div className="header">
-        <h1>Tools</h1>
-        <p>{builtInCount} built-in tools across {builtIn.length} modules</p>
+        <h1>{t('pages.tools.title')}</h1>
+        <p>{t('pages.tools.subtitle', { count: builtInCount, modules: builtIn.length })}</p>
       </div>
 
       {error && (

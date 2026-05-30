@@ -43,6 +43,9 @@ jobs:
       - name: Install WebUI dependencies
         run: cd web && npm ci
 
+      - name: Check i18n translation parity
+        run: cd web && npm run check:i18n
+
       - name: Build SDK workspace
         run: npm run build -w packages/sdk
 

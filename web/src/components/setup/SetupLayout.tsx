@@ -1,27 +1,30 @@
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Shell } from '../Shell';
+import { LanguageSwitcher } from '../LanguageSwitcher';
 import { SetupProvider } from './SetupContext';
 import { SetupNav } from './SetupNav';
 
 const DASHBOARD_LINKS = [
-  { label: 'Dashboard', path: '/' },
-  { label: 'Tools', path: '/tools' },
-  { label: 'Plugins', path: '/plugins' },
-  { label: 'Soul', path: '/soul' },
-  { label: 'Memory', path: '/memory' },
-  { label: 'Logs', path: '/logs' },
-  { label: 'Workspace', path: '/workspace' },
-  { label: 'Tasks', path: '/tasks' },
-  { label: 'MCP', path: '/mcp' },
-  { label: 'Config', path: '/config' },
+  { labelKey: 'nav.dashboard', path: '/' },
+  { labelKey: 'nav.tools', path: '/tools' },
+  { labelKey: 'nav.plugins', path: '/plugins' },
+  { labelKey: 'nav.soul', path: '/soul' },
+  { labelKey: 'nav.memory', path: '/memory' },
+  { labelKey: 'nav.logs', path: '/logs' },
+  { labelKey: 'nav.workspace', path: '/workspace' },
+  { labelKey: 'nav.tasks', path: '/tasks' },
+  { labelKey: 'nav.mcp', path: '/mcp' },
+  { labelKey: 'nav.config', path: '/config' },
 ];
 
 function DisabledNav() {
+  const { t } = useTranslation();
   return (
     <nav aria-hidden="true">
       {DASHBOARD_LINKS.map((link) => (
         <span key={link.path} className="sidebar-link-disabled">
-          {link.label}
+          {t(link.labelKey)}
         </span>
       ))}
     </nav>
@@ -31,6 +34,9 @@ function DisabledNav() {
 function SetupMain() {
   return (
     <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+        <LanguageSwitcher variant="compact" />
+      </div>
       <SetupNav />
       <Outlet />
     </>

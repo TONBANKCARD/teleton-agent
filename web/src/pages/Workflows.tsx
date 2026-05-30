@@ -12,6 +12,7 @@ import type {
   CallApiAction,
   SetVariableAction,
 } from "../lib/api";
+import { useTranslation } from "react-i18next";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -826,6 +827,7 @@ function WorkflowRow({
 // ── Workflows page ────────────────────────────────────────────────────────────
 
 export function Workflows() {
+  const { t } = useTranslation();
   const [workflows, setWorkflows] = useState<WorkflowData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -916,8 +918,8 @@ export function Workflows() {
   return (
     <div>
       <div className="header">
-        <h1>Workflows</h1>
-        <p>Automate actions with time-based, webhook, and event triggers</p>
+        <h1>{t('pages.workflows.title')}</h1>
+        <p>{t('pages.workflows.subtitle')}</p>
       </div>
 
       {error && (

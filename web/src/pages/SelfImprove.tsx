@@ -9,6 +9,7 @@ import {
   type SelfImprovementScanScope,
   type PluginManifest,
 } from "../lib/api";
+import { useTranslation } from "react-i18next";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1691,6 +1692,7 @@ function LogsTab({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function SelfImprove() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<SelfImprovementConfig>({
     selected_plugin: "",
     guide_url: "",
@@ -1799,10 +1801,11 @@ export function SelfImprove() {
   return (
     <div>
       <div className="header">
-        <h1>🚀 Self-Improvement Center</h1>
+        <h1>{t('pages.selfImprove.title')}</h1>
         <p>
-          Meta-orchestrator: delegate autonomous codebase analysis to an installed plugin (e.g.{" "}
-          <code>github-dev-assistant</code>).
+          {t('pages.selfImprove.subtitlePre')}
+          <code>github-dev-assistant</code>
+          {t('pages.selfImprove.subtitlePost')}
         </p>
       </div>
 

@@ -30,6 +30,7 @@ import {
   type TemporalPattern,
   type TemporalTimelineEntry,
 } from "../lib/api";
+import { useTranslation } from "react-i18next";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -1556,11 +1557,12 @@ function CostSection() {
 // ── Main Analytics Page ───────────────────────────────────────────────
 
 export function Analytics() {
+  const { t } = useTranslation();
   return (
     <div className="dashboard-root">
       <div className="header">
-        <h1>Analytics</h1>
-        <p>Usage patterns, performance metrics, and cost analysis</p>
+        <h1>{t('pages.analytics.title')}</h1>
+        <p>{t('pages.analytics.subtitle')}</p>
       </div>
 
       <UsageSection />

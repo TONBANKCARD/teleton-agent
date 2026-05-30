@@ -16,6 +16,7 @@ import { SplitView } from '../components/SplitView';
 import { TemplateSelector } from '../components/TemplateSelector';
 import { VersionHistory } from '../components/VersionHistory';
 import { DiffView } from '../components/DiffView';
+import { useTranslation } from "react-i18next";
 
 const SOUL_FILES = ['SOUL.md', 'SECURITY.md', 'STRATEGY.md', 'MEMORY.md', 'HEARTBEAT.md'] as const;
 
@@ -362,6 +363,7 @@ function AdaptivePromptPanel({ editorContent, onDiff }: AdaptivePromptPanelProps
 }
 
 export function Soul() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [activeTab, setActiveTab] = useState<string>(SOUL_FILES[0]);
   const [content, setContent] = useState('');
@@ -534,8 +536,8 @@ export function Soul() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
       <div className="header" style={{ marginBottom: '16px' }}>
-        <h1>Soul Editor</h1>
-        <p>Edit system prompt files</p>
+        <h1>{t('pages.soul.title')}</h1>
+        <p>{t('pages.soul.subtitle')}</p>
       </div>
 
       {message && (

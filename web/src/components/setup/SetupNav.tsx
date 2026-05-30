@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { STEPS, useSetup } from './SetupContext';
 
 export function SetupNav() {
   const { step } = useSetup();
+  const { t } = useTranslation();
 
   return (
     <div className="step-indicator">
@@ -26,7 +28,7 @@ export function SetupNav() {
               )}
             </div>
             <div className={`step-label${active ? ' active' : ''}${completed ? ' completed' : ''}`}>
-              {s.label}
+              {t(`setup.steps.${s.id}`)}
             </div>
           </div>
         );

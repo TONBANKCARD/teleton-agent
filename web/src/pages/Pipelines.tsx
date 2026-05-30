@@ -7,6 +7,7 @@ import {
   type PipelineRunDetailData,
   type PipelineStepData,
 } from "../lib/api";
+import { useTranslation } from "react-i18next";
 
 interface StepDraft {
   id: string;
@@ -425,6 +426,7 @@ function PipelineGraph({ pipeline }: { pipeline: PipelineData }) {
 }
 
 export function Pipelines() {
+  const { t } = useTranslation();
   const [pipelines, setPipelines] = useState<PipelineData[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [runs, setRuns] = useState<PipelineRunData[]>([]);
@@ -581,8 +583,8 @@ export function Pipelines() {
   return (
     <div>
       <div className="header">
-        <h1>Pipelines</h1>
-        <p>Chain agent steps with dependencies, variables, retries, and durable run history</p>
+        <h1>{t('pages.pipelines.title')}</h1>
+        <p>{t('pages.pipelines.subtitle')}</p>
       </div>
 
       {error && (

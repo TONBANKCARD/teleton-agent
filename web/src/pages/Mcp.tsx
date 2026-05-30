@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { api, McpServerInfo } from '../lib/api';
 import { useConfirm } from '../components/ConfirmDialog';
+import { useTranslation } from "react-i18next";
 
 export function Mcp() {
+  const { t } = useTranslation();
   const { confirm } = useConfirm();
   const [servers, setServers] = useState<McpServerInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,8 +100,8 @@ export function Mcp() {
       <div className="header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1>MCP Servers</h1>
-            <p>External tool servers connected via Model Context Protocol</p>
+            <h1>{t('pages.mcp.title')}</h1>
+            <p>{t('pages.mcp.subtitle')}</p>
           </div>
           <button onClick={() => setShowAdd(!showAdd)} style={{ fontSize: '13px' }}>
             {showAdd ? 'Cancel' : '+ Add Server'}

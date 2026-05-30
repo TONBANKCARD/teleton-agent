@@ -9,6 +9,7 @@ import {
   type NetworkTrustLevel,
 } from "../lib/api";
 import { toast } from "../lib/toast-store";
+import { useTranslation } from "react-i18next";
 
 const TRUST_LEVELS: NetworkTrustLevel[] = ["trusted", "verified", "untrusted"];
 const AGENT_STATUSES: NetworkAgentStatus[] = ["available", "busy", "offline", "degraded"];
@@ -255,6 +256,7 @@ function AgentNode({ agent }: { agent: NetworkAgentData }) {
 }
 
 export function Network() {
+  const { t } = useTranslation();
   const [agents, setAgents] = useState<NetworkAgentData[]>([]);
   const [messages, setMessages] = useState<NetworkMessageData[]>([]);
   const [status, setStatus] = useState<NetworkStatusData | null>(null);
@@ -365,9 +367,9 @@ export function Network() {
     <div style={{ display: "grid", gap: "18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
         <div>
-          <h1>Network</h1>
+          <h1>{t('pages.network.title')}</h1>
           <p style={{ color: "var(--text-secondary)", marginTop: "4px" }}>
-            {loading ? "Loading..." : `${agents.length} remote agents`}
+            {loading ? t('common.loading') : t('pages.network.remoteAgents', { count: agents.length })}
           </p>
         </div>
         <button className="btn-ghost" onClick={load} disabled={loading}>
