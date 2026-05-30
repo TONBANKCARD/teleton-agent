@@ -19,6 +19,7 @@ import { createDepsAdapter } from "./deps.js";
 import type { ApiConfig } from "../config/schema.js";
 import type { StateChangeEvent } from "../agent/lifecycle.js";
 import { createProblem } from "./schemas/common.js";
+import { initPrometheus, renderMetrics, setGaugeCollectors } from "../services/prometheus.js";
 
 // Middleware
 import { requestId } from "./middleware/request-id.js";
@@ -223,6 +224,32 @@ export class ApiServer {
       // Include setup completeness when agent is not running
       const setup = getSetupStatus();
       return c.json({ status: "not_ready", state, setup }, 503);
+    });
+
+    // Prometheus metrics endpoint at root (no auth — standard scrape convention)
+    initPrometheus();
+    setGaugeCollectors({
+      memoryItems: () => {
+        const db = this.deps.memory?.db;
+        if (!db) return 0;
+        const row = db.prepare("SELECT COUNT(*) AS n FROM knowledge").get() as { n: number };
+        return row.n;
+      },
+      activeSessions: () => {
+        const db = this.deps.memory?.db;
+        if (!db) return 0;
+        const since = Date.now() - 30 * 60 * 1000; // updated_at stored as epoch ms
+        const row = db
+          .prepare("SELECT COUNT(*) AS n FROM sessions WHERE updated_at >= ?")
+          .get(since) as { n: number };
+        return row.n;
+      },
+    });
+    this.app.get("/metrics", async (c) => {
+      const body = await renderMetrics();
+      return c.text(body, 200, {
+        "Content-Type": "text/plain; version=0.0.4; charset=utf-8",
+      });
     });
 
     // Auth middleware for /v1/* routes
