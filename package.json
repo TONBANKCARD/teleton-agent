@@ -47,6 +47,8 @@
     "dev:web": "cd web && npm run dev",
     "setup": "node dist/cli/index.js setup",
     "doctor": "node dist/cli/index.js doctor",
+    "backup": "node dist/cli/index.js backup",
+    "restore": "node dist/cli/index.js restore",
     "lint": "eslint src packages/sdk/src --max-warnings 0",
     "lint:fix": "eslint src packages/sdk/src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
