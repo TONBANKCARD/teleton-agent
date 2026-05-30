@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen" alt="Node.js"></a>
+  <a href="https://codecov.io/gh/xlabtg/teleton-agent"><img src="https://codecov.io/gh/xlabtg/teleton-agent/branch/main/graph/badge.svg" alt="Coverage"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7-blue" alt="TypeScript"></a>
   <a href="https://teletonagent.dev"><img src="https://img.shields.io/badge/Website-teletonagent.dev-ff6600" alt="Website"></a>
   <a href="https://docs.teletonagent.dev"><img src="https://img.shields.io/badge/docs-Teleton%20Agents-blue" alt="Documentation"></a>
@@ -41,7 +42,7 @@
 
 ## Current Fork Status
 
-Current fork version: `0.8.19`.
+Current fork version: `0.8.21`.
 
 This README reflects the `xlabtg/teleton-agent` fork through merged PR [#480](https://github.com/xlabtg/teleton-agent/pull/480) / closed issue [#479](https://github.com/xlabtg/teleton-agent/issues/479). It was refreshed from the closed work history available at issue [#481](https://github.com/xlabtg/teleton-agent/issues/481): 236 closed issues and the 200 most recent merged pull requests as of the latest analyzed run.
 
@@ -127,8 +128,18 @@ npm install -g teleton@latest
 
 **Docker:**
 ```bash
-docker run -it -v ~/.teleton:/data ghcr.io/tonresistor/teleton-agent:latest setup
+docker run -it -v ~/.teleton:/data ghcr.io/xlabtg/teleton-agent:latest setup
 ```
+
+**Docker Compose:**
+```bash
+# Interactive first-run setup, then start in the background
+docker compose run --rm agent setup
+docker compose up -d
+```
+The published image is multi-arch (`linux/amd64`, `linux/arm64`) and signed with
+[cosign](https://github.com/sigstore/cosign). See the
+[Deployment Guide](docs/deployment.md) for Docker, Compose and Kubernetes/Helm.
 
 **From source (development):**
 ```bash
@@ -702,7 +713,31 @@ npm run typecheck   # Type checking
 npm run lint        # ESLint
 npm run test        # Vitest
 npm run format      # Prettier
+npm run bench       # Performance benchmarks (tinybench)
+npm run bench:check # Fail on > 20% performance regression
 ```
+
+---
+
+## Performance
+
+Teleton Agent publishes benchmarks for its critical paths so regressions are
+visible and operators can size hardware. The suite lives in
+[`benchmarks/`](benchmarks) and covers vector memory search (KNN over a
+`sqlite-vec` cosine index, N = 100 → 10 000), the agentic-loop per-turn overhead,
+and DEX routing prep. Opt-in tiers measure real DeDust quotes and LLM
+first-token latency.
+
+```bash
+npm run bench         # run all benchmarks and print a report
+npm run bench:check   # fail if a tracked metric regresses > 20%
+```
+
+On a 6-vCPU Linux runner, semantic search takes ~0.12 ms over 100 memories and
+~3.5 ms over 10 000. A CI job runs the suite for PRs touching `src/memory/`,
+`src/agent(s)/`, or `src/ton/` and flags > 20% regressions. See the
+[**Performance Benchmarks**](docs/benchmarks.md) guide for methodology and the
+full baseline.
 
 ---
 
@@ -713,11 +748,12 @@ Full documentation is available in the [`docs/`](docs/) directory:
 | Section | Description |
 |---------|-------------|
 | [Configuration Guide](docs/configuration.md) | Complete reference for every config option |
-| [Deployment Guide](docs/deployment.md) | Docker, systemd, docker-compose, VPS |
+| [Deployment Guide](docs/deployment.md) | Docker, Compose, Kubernetes/Helm, systemd, VPS |
 | [Plugin Development](docs/plugins.md) | Step-by-step plugin tutorial |
 | [Telegram Setup](docs/telegram-setup.md) | API credentials, policies, 2FA, admin commands |
 | [TON Wallet](docs/ton-wallet.md) | Wallet setup, DEX trading, security |
 | [Management API](docs/management-api.md) | HTTPS API, bootstrap mode, authentication, endpoints |
+| [API Reference (OpenAPI)](docs/api-reference/) | OpenAPI 3.1 spec for every `/v1` endpoint + interactive Swagger UI |
 | [WebUI User Guide](docs/user-guide/README.md) | Bilingual guide to the current WebUI pages and workflows |
 | [Agent Network](docs/agent-network.md) | Signed inter-agent protocol, trust levels, and ingress setup |
 | [Semantic Memory](docs/semantic-memory.md) | Upstash Vector modes, fallback, prioritization, retention |

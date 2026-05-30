@@ -1,0 +1,95 @@
+name: Benchmarks
+
+# Detects performance regressions on the hot paths. Runs only for PRs that touch
+# performance-sensitive code. To stay hardware-independent, it benchmarks both the
+# PR and its merge base on the SAME runner with the SAME harness, then fails if a
+# tracked metric's mean time per op regresses > 20%.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/memory/**"
+      - "src/agent/**"
+      - "src/agents/**"
+      - "src/ton/**"
+      - "benchmarks/**"
+      - ".github/workflows/benchmarks.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: bench-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Benchmarks / Regression check
+    runs-on: ubuntu-latest
+
+    steps:
+      # --- PR (head) ---------------------------------------------------------
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          path: pr
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: pr/package-lock.json
+
+      - name: Install PR dependencies
+        working-directory: pr
+        run: npm ci
+
+      - name: Benchmark PR
+        working-directory: pr
+        run: npm run bench -- --runs 3 --json pr-results.json --quiet
+
+      # --- Base (merge target) ----------------------------------------------
+      # Benchmark the base commit with the PR's harness so only source differs.
+      - name: Checkout base
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          path: base
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Benchmark base (same harness, same runner)
+        id: base
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -e
+          # Use the PR's benchmark harness against the base source tree.
+          rm -rf base/benchmarks
+          cp -r pr/benchmarks base/benchmarks
+          cd base
+          npm ci
+          # tinybench may not be in the base lockfile yet; install if missing.
+          node -e "require.resolve('tinybench')" 2>/dev/null || npm i -D tinybench@^2.9.0 --no-save
+          npx tsx benchmarks/run.ts --runs 3 --json base-results.json --quiet
+
+      - name: Compare PR vs base
+        if: github.event_name == 'pull_request' && steps.base.outcome == 'success'
+        working-directory: pr
+        run: |
+          npx tsx benchmarks/check-regression.ts \
+            --baseline ../base/base-results.json \
+            --current pr-results.json \
+            --threshold 20 \
+            --summary "$GITHUB_STEP_SUMMARY"
+
+      # --- Fallback: compare against the committed baseline ------------------
+      - name: Compare PR vs committed baseline (fallback)
+        if: github.event_name != 'pull_request' || steps.base.outcome != 'success'
+        working-directory: pr
+        run: |
+          echo "Base benchmark unavailable — comparing against committed baseline.json" >> "$GITHUB_STEP_SUMMARY"
+          npx tsx benchmarks/check-regression.ts \
+            --baseline benchmarks/baseline.json \
+            --current pr-results.json \
+            --threshold 20 \
+            --summary "$GITHUB_STEP_SUMMARY"
