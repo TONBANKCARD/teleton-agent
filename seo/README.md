@@ -44,8 +44,11 @@ A malformed sitemap therefore fails the build before it can ship.
 
 ## Deployment
 
-These files describe the **public** site, which is hosted separately from this
-repository. To deploy:
+These files describe the **public** site. The landing page itself lives in
+[`site/`](../site/) (see [issue #491](https://github.com/xlabtg/teleton-agent/issues/491))
+and ships its own root-level `robots.txt` / `sitemap.xml`; the assets here cover
+the broader docs + TON/crypto ecosystem. To deploy these ecosystem assets to the
+public host:
 
 1. Run `npm run validate:seo` locally (CI also enforces this).
 2. Copy `sitemap.xml` and `robots.txt` to the web root of the public host so
