@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and troubleshooting
+    url: https://github.com/xlabtg/teleton-agent/discussions/categories/q-a
+    about: Ask usage questions, setup questions, and debugging questions in Discussions.
+  - name: Ideas
+    url: https://github.com/xlabtg/teleton-agent/discussions/categories/ideas
+    about: Share early ideas before they are ready for a feature request.
+  - name: Show and Tell
+    url: https://github.com/xlabtg/teleton-agent/discussions/categories/show-and-tell
+    about: Share plugins, workflows, dashboards, and experiments built with Teleton.
+  - name: Announcements
+    url: https://github.com/xlabtg/teleton-agent/discussions/categories/announcements
+    about: Follow project updates and release announcements.
