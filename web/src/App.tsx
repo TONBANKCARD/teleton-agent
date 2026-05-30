@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Layout } from "./components/Layout";
+import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastContainer } from "./components/ToastContainer";
 import { ConfirmDialogProvider } from "./components/ConfirmDialog";
@@ -56,6 +58,7 @@ function AuthenticatedApp() {
   const [loading, setLoading] = useState(true);
   const [tokenInput, setTokenInput] = useState("");
   const [loginError, setLoginError] = useState("");
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Check for token exchange (from setup launch flow)
@@ -67,7 +70,7 @@ function AuthenticatedApp() {
           window.location.href = "/";
         } else {
           setLoading(false);
-          setLoginError("Token exchange failed");
+          setLoginError(t("login.exchangeFailed"));
         }
       });
       return;
@@ -95,7 +98,7 @@ function AuthenticatedApp() {
     if (success) {
       setIsAuthenticated(true);
     } else {
-      setLoginError("Invalid token");
+      setLoginError(t("login.invalidToken"));
     }
   };
 
@@ -103,7 +106,7 @@ function AuthenticatedApp() {
     return (
       <div className="login-container">
         <div className="login-card">
-          <p>Loading...</p>
+          <p>{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -113,16 +116,19 @@ function AuthenticatedApp() {
     return (
       <div className="login-container">
         <div className="login-card">
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+            <LanguageSwitcher variant="compact" />
+          </div>
           <h1>Teleton</h1>
-          <p>Enter your authentication token to access the dashboard.</p>
+          <p>{t("login.prompt")}</p>
           <div className="form-group">
-            <label>Token</label>
+            <label>{t("login.token")}</label>
             <input
               type="password"
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              placeholder="Paste token from config..."
+              placeholder={t("login.tokenPlaceholder")}
               style={{ width: "100%" }}
             />
           </div>
@@ -132,7 +138,7 @@ function AuthenticatedApp() {
             </div>
           )}
           <button onClick={handleLogin} style={{ width: "100%" }}>
-            Sign In
+            {t("login.signIn")}
           </button>
         </div>
       </div>

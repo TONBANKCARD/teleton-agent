@@ -1,0 +1,64 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "logout": "Выйти",
+    "lightMode": "Светлая тема",
+    "darkMode": "Тёмная тема",
+    "switchToLight": "Переключить на светлую тему",
+    "switchToDark": "Переключить на тёмную тему",
+    "skipToContent": "Перейти к основному содержимому",
+    "mainNavigation": "Основная навигация",
+    "openNavMenu": "Открыть меню навигации",
+    "closeNavMenu": "Закрыть меню навигации",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "back": "Назад",
+    "next": "Далее"
+  },
+  "language": {
+    "label": "Язык"
+  },
+  "nav": {
+    "search": "Поиск...",
+    "commandPaletteTitle": "Открыть командную палитру (Ctrl+K)",
+    "commandPaletteAria": "Открыть командную палитру",
+    "dashboard": "Панель",
+    "agents": "Агенты",
+    "tools": "Инструменты",
+    "plugins": "Плагины",
+    "soul": "Личность",
+    "memory": "Память",
+    "workspace": "Рабочая область",
+    "tasks": "Задачи",
+    "workflows": "Сценарии",
+    "pipelines": "Конвейеры",
+    "events": "События",
+    "mcp": "MCP",
+    "integrations": "Интеграции",
+    "network": "Сеть",
+    "hooks": "Хуки",
+    "sessions": "Сессии",
+    "analytics": "Аналитика",
+    "feedback": "Обратная связь",
+    "security": "Безопасность",
+    "selfImprove": "Самоулучшение",
+    "autonomous": "Автономность",
+    "config": "Конфигурация"
+  },
+  "login": {
+    "prompt": "Введите токен аутентификации для доступа к панели.",
+    "token": "Токен",
+    "tokenPlaceholder": "Вставьте токен из конфигурации...",
+    "signIn": "Войти",
+    "invalidToken": "Неверный токен",
+    "exchangeFailed": "Не удалось обменять токен"
+  },
+  "dashboard": {
+    "loadError": "Не удалось загрузить данные панели"
+  },
+  "setup": {
+    "back": "Назад",
+    "next": "Далее",
+    "nextStep": "Далее: {{step}}"
+  }
+}
