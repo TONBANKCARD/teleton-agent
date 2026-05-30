@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.22](https://github.com/xlabtg/teleton-agent/compare/v0.8.21...v0.8.22) (2026-05-30)
+
+
+### Features
+
+* **webui:** externalize заголовки страниц и мастер Setup, CI-проверка паритета i18n и документация ([6cc83a1](https://github.com/xlabtg/teleton-agent/commit/6cc83a1649fc2b163eaa888cd5d4a6c77a78da1c))
+* **webui:** добавить инфраструктуру i18n (i18next), переключатель EN/RU, externalize навигации и логина ([1136b62](https://github.com/xlabtg/teleton-agent/commit/1136b622d589eaae1e8881a7cab5bf673c1e00b2))
+
+
+### Documentation
+
+* **readme:** синхронизировать версию форка с 0.8.21 ([b271e13](https://github.com/xlabtg/teleton-agent/commit/b271e13b186c22b329ac98877cf6e1e9ecdbc42c))
+
 ## [0.8.21](https://github.com/xlabtg/teleton-agent/compare/v0.8.20...v0.8.21) (2026-05-30)
 
 
