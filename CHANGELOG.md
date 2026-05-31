@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.23](https://github.com/xlabtg/teleton-agent/compare/v0.8.22...v0.8.23) (2026-05-30)
+
+
+### Documentation
+
+* добавить community health файлы ([f2cf7f6](https://github.com/xlabtg/teleton-agent/commit/f2cf7f6d04a7065d7d3835e39f9d71725b513b03))
+
 ## [0.8.22](https://github.com/xlabtg/teleton-agent/compare/v0.8.21...v0.8.22) (2026-05-30)
 
 
