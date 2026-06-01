@@ -77,28 +77,30 @@ the TON mnemonic and integration credentials.
 
 | ID        | Severity | Category       | Summary                                                                  | Task file | GitHub |
 | --------- | -------- | -------------- | ------------------------------------------------------------------------ | --------- | ------ |
-| WORK4-001 | High     | security       | `exec_install`/`exec_service` shell injection + allowlist bypass         | [file](issues/WORK4-001-exec-install-service-shell-injection.md) |  |
-| WORK4-002 | High     | security       | Plugin `migrateFromMainDb` copies core `memory.db` tables into plugin DB | [file](issues/WORK4-002-plugin-migratefrommaindb-core-table-exfiltration.md) |  |
-| WORK4-003 | Medium   | security       | Integration AES key co-located with ciphertext in `memory.db`            | [file](issues/WORK4-003-integration-credentials-key-colocated.md) |  |
-| WORK4-004 | Medium   | logic          | exec `scope: allowlist` ignores `exec.allowlist`, grants all admins      | [file](issues/WORK4-004-exec-scope-allowlist-ignored.md) |  |
-| WORK4-005 | Medium   | security       | WebUI add-MCP-server writes `url`/`env` unvalidated (SSRF + env inject)   | [file](issues/WORK4-005-webui-mcp-url-env-unvalidated-ssrf.md) |  |
-| WORK4-006 | High     | security       | Workflow `call_api` unrestricted server-side fetch (SSRF via webhook)    | [file](issues/WORK4-006-workflow-call-api-no-ssrf-protection.md) |  |
-| WORK4-007 | Medium   | security       | Public workflow webhook secret compared with timing-unsafe `===`         | [file](issues/WORK4-007-workflow-webhook-secret-timing-unsafe.md) |  |
-| WORK4-008 | Medium   | security       | Outbound webhook SSRF guard never resolves DNS (rebinding bypass)        | [file](issues/WORK4-008-webhook-ssrf-guard-skips-dns.md) |  |
-| WORK4-009 | High     | security       | `/api/export/import` merges config outside `CONFIGURABLE_KEYS`           | [file](issues/WORK4-009-config-import-bypasses-allowlist.md) |  |
-| WORK4-010 | High     | reliability    | Pipeline timeout doesn't stop a primary-agent run; orphaned step write   | [file](issues/WORK4-010-pipeline-timeout-does-not-stop-primary-agent.md) |  |
-| WORK4-011 | Medium   | reliability    | `restoreInterruptedTasks` bypasses `maxParallelTasks` after a crash      | [file](issues/WORK4-011-restore-interrupted-tasks-bypasses-cap.md) |  |
-| WORK4-012 | Medium   | logic          | Unconstrained autonomous task has no default iteration cap (→500)        | [file](issues/WORK4-012-autonomous-task-no-default-iteration-cap.md) |  |
-| WORK4-013 | High     | logic          | Gift payment verification can never match (no `fromId`; s vs ms)         | [file](issues/WORK4-013-gift-payment-verification-always-fails.md) |  |
-| WORK4-014 | Medium   | financial      | SDK `ton.verifyPayment` has no lower time bound (replay)                 | [file](issues/WORK4-014-sdk-verifypayment-missing-lower-time-bound.md) |  |
-| WORK4-015 | High     | data-integrity | Hardcoded vector dimension (384) drops rows for non-local providers      | [file](issues/WORK4-015-hardcoded-vector-dimension.md) |  |
-| WORK4-016 | Medium   | logic          | Hybrid message search never queries the semantic vector store           | [file](issues/WORK4-016-message-search-skips-semantic-vector-store.md) |  |
-| WORK4-017 | Medium   | performance    | `memory getStats` forces a full recalculate on every call               | [file](issues/WORK4-017-memory-getstats-forces-full-recalculate.md) |  |
-| WORK4-018 | Medium   | security       | Groq STT/TTS leak raw, untruncated upstream error bodies                 | [file](issues/WORK4-018-groq-stt-tts-raw-error-body-leak.md) |  |
+| WORK4-001 | High     | security       | `exec_install`/`exec_service` shell injection + allowlist bypass         | [file](issues/WORK4-001-exec-install-service-shell-injection.md) | [#523](https://github.com/xlabtg/teleton-agent/issues/523) |
+| WORK4-002 | High     | security       | Plugin `migrateFromMainDb` copies core `memory.db` tables into plugin DB | [file](issues/WORK4-002-plugin-migratefrommaindb-core-table-exfiltration.md) | [#524](https://github.com/xlabtg/teleton-agent/issues/524) |
+| WORK4-003 | Medium   | security       | Integration AES key co-located with ciphertext in `memory.db`            | [file](issues/WORK4-003-integration-credentials-key-colocated.md) | [#525](https://github.com/xlabtg/teleton-agent/issues/525) |
+| WORK4-004 | Medium   | logic          | exec `scope: allowlist` ignores `exec.allowlist`, grants all admins      | [file](issues/WORK4-004-exec-scope-allowlist-ignored.md) | [#526](https://github.com/xlabtg/teleton-agent/issues/526) |
+| WORK4-005 | Medium   | security       | WebUI add-MCP-server writes `url`/`env` unvalidated (SSRF + env inject)   | [file](issues/WORK4-005-webui-mcp-url-env-unvalidated-ssrf.md) | [#527](https://github.com/xlabtg/teleton-agent/issues/527) |
+| WORK4-006 | High     | security       | Workflow `call_api` unrestricted server-side fetch (SSRF via webhook)    | [file](issues/WORK4-006-workflow-call-api-no-ssrf-protection.md) | [#528](https://github.com/xlabtg/teleton-agent/issues/528) |
+| WORK4-007 | Medium   | security       | Public workflow webhook secret compared with timing-unsafe `===`         | [file](issues/WORK4-007-workflow-webhook-secret-timing-unsafe.md) | [#529](https://github.com/xlabtg/teleton-agent/issues/529) |
+| WORK4-008 | Medium   | security       | Outbound webhook SSRF guard never resolves DNS (rebinding bypass)        | [file](issues/WORK4-008-webhook-ssrf-guard-skips-dns.md) | [#530](https://github.com/xlabtg/teleton-agent/issues/530) |
+| WORK4-009 | High     | security       | `/api/export/import` merges config outside `CONFIGURABLE_KEYS`           | [file](issues/WORK4-009-config-import-bypasses-allowlist.md) | [#531](https://github.com/xlabtg/teleton-agent/issues/531) |
+| WORK4-010 | High     | reliability    | Pipeline timeout doesn't stop a primary-agent run; orphaned step write   | [file](issues/WORK4-010-pipeline-timeout-does-not-stop-primary-agent.md) | [#532](https://github.com/xlabtg/teleton-agent/issues/532) |
+| WORK4-011 | Medium   | reliability    | `restoreInterruptedTasks` bypasses `maxParallelTasks` after a crash      | [file](issues/WORK4-011-restore-interrupted-tasks-bypasses-cap.md) | [#533](https://github.com/xlabtg/teleton-agent/issues/533) |
+| WORK4-012 | Medium   | logic          | Unconstrained autonomous task has no default iteration cap (→500)        | [file](issues/WORK4-012-autonomous-task-no-default-iteration-cap.md) | [#534](https://github.com/xlabtg/teleton-agent/issues/534) |
+| WORK4-013 | High     | logic          | Gift payment verification can never match (no `fromId`; s vs ms)         | [file](issues/WORK4-013-gift-payment-verification-always-fails.md) | [#535](https://github.com/xlabtg/teleton-agent/issues/535) |
+| WORK4-014 | Medium   | financial      | SDK `ton.verifyPayment` has no lower time bound (replay)                 | [file](issues/WORK4-014-sdk-verifypayment-missing-lower-time-bound.md) | [#536](https://github.com/xlabtg/teleton-agent/issues/536) |
+| WORK4-015 | High     | data-integrity | Hardcoded vector dimension (384) drops rows for non-local providers      | [file](issues/WORK4-015-hardcoded-vector-dimension.md) | [#537](https://github.com/xlabtg/teleton-agent/issues/537) |
+| WORK4-016 | Medium   | logic          | Hybrid message search never queries the semantic vector store           | [file](issues/WORK4-016-message-search-skips-semantic-vector-store.md) | [#538](https://github.com/xlabtg/teleton-agent/issues/538) |
+| WORK4-017 | Medium   | performance    | `memory getStats` forces a full recalculate on every call               | [file](issues/WORK4-017-memory-getstats-forces-full-recalculate.md) | [#539](https://github.com/xlabtg/teleton-agent/issues/539) |
+| WORK4-018 | Medium   | security       | Groq STT/TTS leak raw, untruncated upstream error bodies                 | [file](issues/WORK4-018-groq-stt-tts-raw-error-body-leak.md) | [#540](https://github.com/xlabtg/teleton-agent/issues/540) |
 
-The `GitHub` column is filled in after the issues are created upstream (see
-[README.md](README.md)); the `github-issue` frontmatter field in each task file
-is backfilled at the same time.
+All 18 `medium`+ findings have been filed upstream as issues #523–#540 (the
+`GitHub` column above); the `github-issue` frontmatter field in each task file
+carries the same link. The automation account has no triage rights upstream, so
+maintainers still need to apply the suggested labels/milestone (listed in each
+issue footer).
 
 ## 4. Findings detail
 

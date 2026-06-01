@@ -6,7 +6,7 @@ audit-source: "#521"
 finding-id: "WORK4-018"
 severity: "medium"
 category: "security"
-github-issue: ""
+github-issue: "https://github.com/xlabtg/teleton-agent/issues/540"
 ---
 
 ## Problem Description
