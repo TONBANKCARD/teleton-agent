@@ -1,0 +1,50 @@
+# gitleaks configuration for teleton-agent
+#
+# Extends the bundled default rule set (https://github.com/gitleaks/gitleaks)
+# and adds an allowlist for known false positives such as documentation
+# placeholders, `*.example` templates, and test fixtures.
+#
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+# Inherit all of gitleaks' built-in detection rules.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist for documented placeholders and fixtures"
+
+# Files that intentionally contain placeholder credentials. These are
+# templates and docs, never real secrets.
+paths = [
+  '''\.env\.example$''',
+  '''config\.example\.yaml$''',
+  '''.*\.example\.(ya?ml|json|env)$''',
+  '''package-lock\.json$''',
+  '''CHANGELOG\.md$''',
+  '''(^|/)docs/''',
+  '''(^|/)__tests__/''',
+  '''(^|/)__fixtures__/''',
+  '''(^|/)e2e/''',
+  '''(^|/)examples/''',
+]
+
+# Common placeholder values used throughout docs and examples.
+regexes = [
+  '''YOUR_[A-Z_]*(KEY|TOKEN|SECRET|HASH|ID)''',
+  '''sk-ant-\.\.\.''',
+  '''sk-xxx''',
+  '''0123456789abcdef''',
+  '''123456:ABC-DEF''',
+  '''(?i)dummy|example|placeholder|changeme|your[-_]?''',
+  # Public Claude Code OAuth client ID (not a secret — client IDs are public
+  # by design; this value is extracted from the Claude Code binary).
+  '''9d1c250a-e61b-44d9-88ed-5944d1962f5e''',
+]
+
+# Specific known-safe stopwords appearing in templates.
+stopwords = [
+  "example",
+  "placeholder",
+  "dummy",
+  "changeme",
+]
