@@ -35,6 +35,16 @@ Instead, please report vulnerabilities through one of these channels:
 - Potential impact assessment
 - Suggested fix (if any)
 
+## Automated Security Scanning (CI)
+
+Beyond periodic manual audits, the repository runs continuous automated checks:
+
+- **CodeQL static analysis** (`.github/workflows/codeql.yml`) — scans JavaScript/TypeScript with the `security-extended` query suite on every push to `main`, every pull request, and on a weekly schedule. Findings appear in the GitHub **Security** tab and block PRs on `error`-severity alerts.
+- **Secret scanning with gitleaks** (`.github/workflows/gitleaks.yml`) — scans commits and pull requests for accidentally committed credentials. Known false positives (documentation placeholders, `*.example` templates, test fixtures) are allowlisted in [`.gitleaks.toml`](.gitleaks.toml).
+- **Dependency audit** (`.github/workflows/audit-weekly.yml` and the `Security audit` job in `ci.yml`) — runs `npm audit` to catch vulnerable dependencies.
+
+Maintainers should additionally enable GitHub native **Secret scanning** and **Push protection** under *Settings → Security* so that detected secrets are blocked before they reach the repository.
+
 ## Security Architecture
 
 Teleton Agent implements multiple layers of defense:
