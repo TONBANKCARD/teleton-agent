@@ -7,6 +7,9 @@ import {
   isIntegrationAuthType,
 } from "./base.js";
 import { ensureIntegrationTables } from "./storage.js";
+import { createLogger } from "../../utils/logger.js";
+
+const log = createLogger("IntegrationAuth");
 
 interface CredentialRow {
   id: string;
@@ -44,7 +47,6 @@ interface OAuthTokenResponse {
   scope?: unknown;
 }
 
-const KEY_SETTING = "integration_credentials_key";
 const SECRET_KEYS = new Set([
   "apiKey",
   "accessToken",
@@ -67,18 +69,11 @@ function deriveKey(material: string): Buffer {
   return createHash("sha256").update(material).digest();
 }
 
-function getStoredKey(db: Database.Database): string {
-  const row = db.prepare("SELECT value FROM security_settings WHERE key = ?").get(KEY_SETTING) as
-    | { value: string }
-    | undefined;
-  if (row?.value) return row.value;
-
-  const generated = randomBytes(32).toString("hex");
-  db.prepare(
-    `INSERT INTO security_settings (key, value) VALUES (?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-  ).run(KEY_SETTING, generated);
-  return generated;
+function warnNoKey(): void {
+  log.warn(
+    "TELETON_INTEGRATIONS_KEY is not set. Integration credentials are NOT encrypted at rest. " +
+      "Set TELETON_INTEGRATIONS_KEY to a 64-character hex string to enable encryption."
+  );
 }
 
 function encryptJson(value: Record<string, unknown>, key: Buffer): string {
@@ -145,7 +140,11 @@ export class IntegrationAuthManager {
   constructor(db: Database.Database, keyMaterial?: string) {
     ensureIntegrationTables(db);
     this.db = db;
-    this.key = deriveKey(keyMaterial || process.env.TELETON_INTEGRATIONS_KEY || getStoredKey(db));
+    const material = keyMaterial || process.env.TELETON_INTEGRATIONS_KEY || "";
+    if (!material) {
+      warnNoKey();
+    }
+    this.key = deriveKey(material || "default-insecure-key-set-TELETON_INTEGRATIONS_KEY");
   }
 
   createCredential(input: CreateCredentialInput): IntegrationCredential {
