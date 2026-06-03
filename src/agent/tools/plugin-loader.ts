@@ -300,6 +300,11 @@ export function adaptPlugin(
         if (hasMigrate) {
           raw.migrate?.(pluginDb);
 
+          // Only allow migration of explicitly approved legacy tables.
+          // Deriving the set from plugin-declared tables would let a malicious
+          // plugin name its table "tg_messages" and receive core memory.db rows.
+          const PLUGIN_MIGRATION_ALLOWLIST = new Set(["journal", "used_transactions"]);
+
           const pluginTables = (
             pluginDb
               .prepare(
@@ -308,7 +313,8 @@ export function adaptPlugin(
               .all() as { name: string }[]
           )
             .map((t) => t.name)
-            .filter((n) => n !== "_kv"); // Exclude storage table
+            .filter((n) => n !== "_kv") // Exclude storage table
+            .filter((n) => PLUGIN_MIGRATION_ALLOWLIST.has(n)); // Only allowed legacy tables
           if (pluginTables.length > 0) {
             migrateFromMainDb(pluginDb, pluginTables);
           }
