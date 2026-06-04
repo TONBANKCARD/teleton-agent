@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.32](https://github.com/xlabtg/teleton-agent/compare/v0.8.31...v0.8.32) (2026-06-04)
+
+
+### Bug Fixes
+
+* **workflows:** безопасно сравнивать webhook secret ([750b5dc](https://github.com/xlabtg/teleton-agent/commit/750b5dc24348e7e78dbc9bd9b8fb4dd8d5da995d))
+* **workflows:** безопасно сравнивать webhook secret ([4c1dcc0](https://github.com/xlabtg/teleton-agent/commit/4c1dcc0aaea7082544fda0913d075ffa954ac220))
+
+
+### Documentation
+
+* синхронизировать версию README ([475805e](https://github.com/xlabtg/teleton-agent/commit/475805e3a99f5f4be8bc5282e80be269dffca393))
+
 ## [0.8.31](https://github.com/xlabtg/teleton-agent/compare/v0.8.30...v0.8.31) (2026-06-04)
 
 
