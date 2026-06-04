@@ -2,10 +2,12 @@ import { Hono } from "hono";
 import type { WebUIServerDeps, APIResponse, McpServerInfo } from "../types.js";
 import { readRawConfig, writeRawConfig } from "../../config/configurable-keys.js";
 import { getErrorMessage } from "../../utils/errors.js";
-
-/** Strict validation for package names and args — blocks shell metacharacters */
-const SAFE_PACKAGE_RE = /^[@a-zA-Z0-9._\/-]+$/;
-const SAFE_ARG_RE = /^[a-zA-Z0-9._\/:=@-]+$/;
+import {
+  SAFE_MCP_ARG_RE,
+  SAFE_MCP_PACKAGE_RE,
+  validateMcpEnv,
+  validateMcpServerUrl,
+} from "../../config/mcp-security.js";
 
 export function createMcpRoutes(deps: WebUIServerDeps) {
   const app = new Hono();
@@ -39,8 +41,8 @@ export function createMcpRoutes(deps: WebUIServerDeps) {
         );
       }
 
-      // Validate package name and args against strict regex
-      if (body.package && !SAFE_PACKAGE_RE.test(body.package)) {
+      // Validate package name, args, URL, and env before persisting restart-time MCP config.
+      if (body.package && !SAFE_MCP_PACKAGE_RE.test(body.package)) {
         return c.json(
           {
             success: false,
@@ -51,7 +53,7 @@ export function createMcpRoutes(deps: WebUIServerDeps) {
       }
       if (body.args) {
         for (const arg of body.args) {
-          if (!SAFE_ARG_RE.test(arg)) {
+          if (!SAFE_MCP_ARG_RE.test(arg)) {
             return c.json(
               {
                 success: false,
@@ -61,6 +63,16 @@ export function createMcpRoutes(deps: WebUIServerDeps) {
             );
           }
         }
+      }
+      if (body.url) {
+        const urlError = validateMcpServerUrl(body.url);
+        if (urlError) {
+          return c.json({ success: false, error: urlError } as APIResponse<never>, 400);
+        }
+      }
+      const envError = validateMcpEnv(body.env);
+      if (envError) {
+        return c.json({ success: false, error: envError } as APIResponse<never>, 400);
       }
 
       const raw = readRawConfig(deps.configPath);

@@ -17,6 +17,7 @@ import type { ToolRegistry } from "./registry.js";
 import type { McpConfig, McpServerConfig } from "../../config/schema.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
+import { BLOCKED_MCP_ENV_KEYS, validateMcpServerUrl } from "../../config/mcp-security.js";
 
 /**
  * Built-in tool name prefixes that MCP tools must not shadow.
@@ -100,17 +101,9 @@ export async function loadMcpServers(config: McpConfig): Promise<McpConnection[]
           if (process.env[key]) safeEnv[key] = process.env[key] ?? "";
         }
 
-        // Block dangerous env vars that could enable code injection
-        const BLOCKED_ENV_KEYS = new Set([
-          "LD_PRELOAD",
-          "NODE_OPTIONS",
-          "LD_LIBRARY_PATH",
-          "DYLD_INSERT_LIBRARIES",
-          "ELECTRON_RUN_AS_NODE",
-        ]);
         const filteredEnv: Record<string, string> = {};
         for (const [k, v] of Object.entries(serverConfig.env ?? {})) {
-          if (BLOCKED_ENV_KEYS.has(k.toUpperCase())) {
+          if (BLOCKED_MCP_ENV_KEYS.has(k.toUpperCase())) {
             log.warn({ key: k, server: name }, "Blocked dangerous env var for MCP server");
           } else {
             filteredEnv[k] = v;
@@ -124,6 +117,10 @@ export async function loadMcpServers(config: McpConfig): Promise<McpConnection[]
           stderr: "pipe",
         });
       } else if (serverConfig.url) {
+        const urlError = validateMcpServerUrl(serverConfig.url);
+        if (urlError) {
+          throw new Error(`MCP server "${name}": ${urlError}`);
+        }
         transport = new StreamableHTTPClientTransport(new URL(serverConfig.url));
       } else {
         throw new Error(`MCP server "${name}": needs 'command' or 'url'`);
