@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.30](https://github.com/xlabtg/teleton-agent/compare/v0.8.29...v0.8.30) (2026-06-04)
+
+
+### Bug Fixes
+
+* **mcp:** валидировать url и env перед сохранением ([a220061](https://github.com/xlabtg/teleton-agent/commit/a2200619f4b819a3f1b96c8421b0d15b1a56d77a))
+* **mcp:** валидировать URL и env при добавлении MCP server ([58c4905](https://github.com/xlabtg/teleton-agent/commit/58c4905d32fac636398219234111314f52424632))
+
+
+### Documentation
+
+* синхронизировать версию README ([916a0f5](https://github.com/xlabtg/teleton-agent/commit/916a0f5a2d3dcef1058fbb31311881f59b041882))
+
 ## [0.8.29](https://github.com/xlabtg/teleton-agent/compare/v0.8.28...v0.8.29) (2026-06-04)
 
 
