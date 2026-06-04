@@ -139,7 +139,7 @@ export function Mcp() {
                 type="text"
                 value={addPkg}
                 onChange={(e) => setAddPkg(e.target.value)}
-                placeholder="@modelcontextprotocol/server-filesystem  or  http://localhost:3001/mcp"
+                placeholder="@modelcontextprotocol/server-filesystem  or  https://mcp.example.com/api"
                 style={{ width: '100%', fontSize: '13px' }}
               />
             </div>
@@ -372,4 +372,3 @@ export function Mcp() {
     </div>
   );
 }
-

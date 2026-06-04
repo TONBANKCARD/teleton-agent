@@ -8,6 +8,7 @@
 
 import { getDefaultConfigPath } from "../../config/loader.js";
 import { readRawConfig, writeRawConfig } from "../../config/configurable-keys.js";
+import { validateMcpEnv, validateMcpServerUrl } from "../../config/mcp-security.js";
 
 function ensureMcpSection(raw: Record<string, unknown>): Record<string, Record<string, unknown>> {
   if (!raw.mcp || typeof raw.mcp !== "object") {
@@ -56,6 +57,11 @@ export async function mcpAddCommand(
 
   if (options.url) {
     // Treat pkg as a URL
+    const urlError = validateMcpServerUrl(pkg);
+    if (urlError) {
+      console.error(`❌ ${urlError}`);
+      process.exit(1);
+    }
     entry.url = pkg;
   } else {
     // Store command and args separately to preserve arguments with spaces
@@ -77,6 +83,11 @@ export async function mcpAddCommand(
         process.exit(1);
       }
       envMap[pair.slice(0, eq)] = pair.slice(eq + 1);
+    }
+    const envError = validateMcpEnv(envMap);
+    if (envError) {
+      console.error(`❌ ${envError}`);
+      process.exit(1);
     }
     entry.env = envMap;
   }
