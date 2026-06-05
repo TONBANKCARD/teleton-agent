@@ -1,11 +1,28 @@
 import { lookup as dnsLookup } from "node:dns/promises";
+import type { LookupAddress, LookupOptions } from "node:dns";
 import { BlockList, isIP } from "node:net";
+import type { LookupFunction } from "node:net";
+import { Agent } from "undici";
 
-type LookupAddress = { address: string; family: number };
 type LookupFn = (
   hostname: string,
   options: { all: true; verbatim: true }
 ) => Promise<LookupAddress[]>;
+type FetchInitWithDispatcher = RequestInit & { dispatcher: Agent };
+
+export interface ResolvedOutboundUrl {
+  url: URL;
+  hostname: string;
+  addresses: LookupAddress[];
+}
+
+export interface OutboundFetchResponse {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  url: string;
+  headers: Headers;
+}
 
 export interface OutboundUrlGuardOptions {
   allowedProtocols: readonly string[];
@@ -64,21 +81,65 @@ export async function validateResolvedOutboundUrl(
   raw: string,
   options: OutboundUrlGuardOptions
 ): Promise<URL> {
+  return (await resolveOutboundUrl(raw, options)).url;
+}
+
+export async function resolveOutboundUrl(
+  raw: string,
+  options: OutboundUrlGuardOptions
+): Promise<ResolvedOutboundUrl> {
   const url = validateOutboundUrl(raw, options);
   const hostname = normalizeHostname(url.hostname);
-  if (isIP(hostname) !== 0) return url;
+  const ipVersion = isIP(hostname);
+  if (ipVersion !== 0) {
+    return {
+      url,
+      hostname,
+      addresses: [{ address: hostname, family: ipVersion }],
+    };
+  }
 
   const resolver = options.lookup ?? defaultLookup;
-  const addresses = await resolver(hostname, { all: true, verbatim: true });
+  const addresses = (await resolver(hostname, { all: true, verbatim: true })).map((address) => ({
+    address: normalizeHostname(address.address),
+    family: address.family,
+  }));
   if (addresses.length === 0) {
     throw new Error(`${options.label} hostname could not be resolved: ${hostname}`);
   }
 
   for (const { address } of addresses) {
-    validateIpAddress(normalizeHostname(address), options.label, "resolves to");
+    validateIpAddress(address, options.label, "resolves to");
   }
 
-  return url;
+  return { url, hostname, addresses };
+}
+
+export async function fetchValidatedOutboundUrl(
+  raw: string,
+  init: RequestInit,
+  options: OutboundUrlGuardOptions
+): Promise<OutboundFetchResponse> {
+  const target = await resolveOutboundUrl(raw, options);
+  const dispatcher = createPinnedDispatcher(target, options.label);
+
+  try {
+    const response = await fetch(target.url.toString(), {
+      ...init,
+      redirect: "manual",
+      dispatcher,
+    } as FetchInitWithDispatcher);
+    await response.body?.cancel().catch(() => undefined);
+    return {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+      headers: response.headers,
+    };
+  } finally {
+    await dispatcher.close();
+  }
 }
 
 function normalizeHostname(hostname: string): string {
@@ -134,4 +195,66 @@ function getMappedIpv4(hostname: string): string | undefined {
 function formatProtocols(protocols: readonly string[]): string {
   if (protocols.length === 1) return protocols[0];
   return `${protocols.slice(0, -1).join(", ")} or ${protocols[protocols.length - 1]}`;
+}
+
+function createPinnedDispatcher(target: ResolvedOutboundUrl, label: string): Agent {
+  return new Agent({
+    connect: {
+      lookup: createPinnedLookup(target, label),
+    },
+  });
+}
+
+function createPinnedLookup(target: ResolvedOutboundUrl, label: string): LookupFunction {
+  return (hostname, options, callback) => {
+    const requestedFamily = normalizeLookupFamily(options.family);
+    const normalizedHostname = normalizeHostname(hostname);
+    if (normalizedHostname !== target.hostname) {
+      callbackWithError(
+        callback,
+        new Error(`${label} redirected DNS lookup to unvalidated hostname: ${hostname}`)
+      );
+      return;
+    }
+
+    const addresses = selectPinnedAddresses(target.addresses, requestedFamily);
+    if (addresses.length === 0) {
+      callbackWithError(
+        callback,
+        new Error(`${label} has no validated IPv${requestedFamily} address for ${hostname}`)
+      );
+      return;
+    }
+
+    if (options.all) {
+      callback(null, addresses);
+      return;
+    }
+
+    callback(null, addresses[0].address, addresses[0].family);
+  };
+}
+
+function callbackWithError(
+  callback: Parameters<LookupFunction>[2],
+  error: NodeJS.ErrnoException
+): void {
+  callback(error, "", 0);
+}
+
+function normalizeLookupFamily(family: LookupOptions["family"]): number | undefined {
+  if (family === "IPv4") return 4;
+  if (family === "IPv6") return 6;
+  if (family === 0) return undefined;
+  return family;
+}
+
+function selectPinnedAddresses(
+  addresses: LookupAddress[],
+  family: number | undefined
+): LookupAddress[] {
+  if (family === 4 || family === 6) {
+    return addresses.filter((address) => address.family === family);
+  }
+  return addresses;
 }

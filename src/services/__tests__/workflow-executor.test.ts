@@ -187,8 +187,11 @@ describe("WorkflowExecutor", () => {
         headers: { "content-type": "application/json" },
         body: '{"name":"World"}',
         signal: expect.any(AbortSignal),
+        dispatcher: expect.any(Object),
+        redirect: "manual",
       })
     );
+    expect(dnsMocks.lookup).toHaveBeenCalledWith("example.com", { all: true, verbatim: true });
     const updated = store.get(wf.id)!;
     expect(updated.runCount).toBe(1);
     expect(updated.lastError).toBeNull();
