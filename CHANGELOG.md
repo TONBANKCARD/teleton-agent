@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.35](https://github.com/xlabtg/teleton-agent/compare/v0.8.34...v0.8.35) (2026-06-07)
+
+
+### Bug Fixes
+
+* **provider:** нормализовать GLM-5.1 для text-only истории ([7be1c95](https://github.com/xlabtg/teleton-agent/commit/7be1c953bc8084ed56358987183f55be5f83c3c7))
+* **provider:** нормализовать историю GLM-5.1 для NVIDIA ([a3af64e](https://github.com/xlabtg/teleton-agent/commit/a3af64e735865d814a3a3d786a4ed417210373c1))
+
 ## [0.8.34](https://github.com/xlabtg/teleton-agent/compare/v0.8.33...v0.8.34) (2026-06-07)
 
 
