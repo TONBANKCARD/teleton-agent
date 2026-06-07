@@ -3,6 +3,12 @@ import Database from "better-sqlite3";
 import { AlertingService, validateWebhookUrl, redactSecrets } from "../alerting.js";
 import type { AnomalyEvent } from "../anomaly-detector.js";
 
+const dnsMocks = vi.hoisted(() => ({
+  lookup: vi.fn(),
+}));
+
+vi.mock("node:dns/promises", () => dnsMocks);
+
 vi.mock("../../utils/logger.js", () => ({
   createLogger: vi.fn(() => ({
     info: vi.fn(),
@@ -20,60 +26,83 @@ vi.mock("../notifications.js", () => ({
   notificationBus: { emit: vi.fn() },
 }));
 
+beforeEach(() => {
+  dnsMocks.lookup.mockReset();
+  dnsMocks.lookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+});
+
 // ── validateWebhookUrl ─────────────────────────────────────────────────────────
 
 describe("validateWebhookUrl", () => {
-  it("accepts a valid https URL with a public hostname", () => {
-    expect(() => validateWebhookUrl("https://hooks.example.com/notify")).not.toThrow();
+  it("accepts a valid https URL with a public hostname", async () => {
+    await expect(validateWebhookUrl("https://hooks.example.com/notify")).resolves.toBeUndefined();
+    expect(dnsMocks.lookup).toHaveBeenCalledWith("hooks.example.com", {
+      all: true,
+      verbatim: true,
+    });
   });
 
-  it("rejects http:// URLs", () => {
-    expect(() => validateWebhookUrl("http://hooks.example.com/notify")).toThrow(/https:/);
+  it("rejects http:// URLs", async () => {
+    await expect(validateWebhookUrl("http://hooks.example.com/notify")).rejects.toThrow(/https:/);
   });
 
-  it("rejects link-local 169.254.0.0/16 (IMDS)", () => {
-    expect(() => validateWebhookUrl("https://169.254.169.254/latest/meta-data/")).toThrow(
+  it("rejects link-local 169.254.0.0/16 (IMDS)", async () => {
+    await expect(validateWebhookUrl("https://169.254.169.254/latest/meta-data/")).rejects.toThrow(
       /private\/loopback/
     );
   });
 
-  it("rejects loopback 127.0.0.1", () => {
-    expect(() => validateWebhookUrl("https://127.0.0.1:7778/v1/agent/stop")).toThrow(
+  it("rejects loopback 127.0.0.1", async () => {
+    await expect(validateWebhookUrl("https://127.0.0.1:7778/v1/agent/stop")).rejects.toThrow(
       /private\/loopback/
     );
   });
 
-  it("rejects RFC-1918 10.0.0.0/8", () => {
-    expect(() => validateWebhookUrl("https://10.1.2.3/hook")).toThrow(/private\/loopback/);
+  it("rejects RFC-1918 10.0.0.0/8", async () => {
+    await expect(validateWebhookUrl("https://10.1.2.3/hook")).rejects.toThrow(/private\/loopback/);
   });
 
-  it("rejects RFC-1918 172.16.0.0/12 low end", () => {
-    expect(() => validateWebhookUrl("https://172.16.0.1/hook")).toThrow(/private\/loopback/);
+  it("rejects RFC-1918 172.16.0.0/12 low end", async () => {
+    await expect(validateWebhookUrl("https://172.16.0.1/hook")).rejects.toThrow(
+      /private\/loopback/
+    );
   });
 
-  it("rejects RFC-1918 172.31.255.255 high end", () => {
-    expect(() => validateWebhookUrl("https://172.31.255.255/hook")).toThrow(/private\/loopback/);
+  it("rejects RFC-1918 172.31.255.255 high end", async () => {
+    await expect(validateWebhookUrl("https://172.31.255.255/hook")).rejects.toThrow(
+      /private\/loopback/
+    );
   });
 
-  it("accepts 172.32.0.1 (outside RFC-1918 range)", () => {
-    expect(() => validateWebhookUrl("https://172.32.0.1/hook")).not.toThrow();
+  it("accepts 172.32.0.1 (outside RFC-1918 range)", async () => {
+    await expect(validateWebhookUrl("https://172.32.0.1/hook")).resolves.toBeUndefined();
   });
 
-  it("rejects RFC-1918 192.168.0.0/16", () => {
-    expect(() => validateWebhookUrl("https://192.168.1.1/hook")).toThrow(/private\/loopback/);
+  it("rejects RFC-1918 192.168.0.0/16", async () => {
+    await expect(validateWebhookUrl("https://192.168.1.1/hook")).rejects.toThrow(
+      /private\/loopback/
+    );
   });
 
-  it("rejects IPv6 loopback ::1", () => {
-    expect(() => validateWebhookUrl("https://[::1]/hook")).toThrow(/private\/loopback/);
+  it("rejects IPv6 loopback ::1", async () => {
+    await expect(validateWebhookUrl("https://[::1]/hook")).rejects.toThrow(/private\/loopback/);
   });
 
-  it("rejects localhost hostname", () => {
-    expect(() => validateWebhookUrl("https://localhost/hook")).toThrow(/loopback hostname/);
+  it("rejects localhost hostname", async () => {
+    await expect(validateWebhookUrl("https://localhost/hook")).rejects.toThrow(/loopback hostname/);
   });
 
-  it("rejects .localhost subdomains", () => {
-    expect(() => validateWebhookUrl("https://internal.localhost/hook")).toThrow(
+  it("rejects .localhost subdomains", async () => {
+    await expect(validateWebhookUrl("https://internal.localhost/hook")).rejects.toThrow(
       /loopback hostname/
+    );
+  });
+
+  it("rejects hostnames that resolve to metadata IPs", async () => {
+    dnsMocks.lookup.mockResolvedValueOnce([{ address: "169.254.169.254", family: 4 }]);
+
+    await expect(validateWebhookUrl("https://rebind.example.com/x")).rejects.toThrow(
+      /private|loopback|metadata|not allowed/i
     );
   });
 });
@@ -213,6 +242,29 @@ describe("AlertingService webhook dispatch", () => {
     expect(result.errors[0].error).toMatch(/private\/loopback/);
   });
 
+  it("does not call fetch when webhook hostname resolves to a metadata IP", async () => {
+    dnsMocks.lookup.mockResolvedValueOnce([{ address: "169.254.169.254", family: 4 }]);
+    const svc = new AlertingService(db, {
+      config: {
+        enabled: true,
+        sensitivity: 2.5,
+        baseline_days: 7,
+        min_samples: 24,
+        cooldown_minutes: 0,
+        alerting: {
+          in_app: false,
+          telegram: false,
+          telegram_chat_ids: [],
+          webhook_url: "https://rebind.example.com/hook",
+        },
+      },
+    });
+
+    const result = await svc.dispatchAnomaly(makeEvent());
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(result.errors[0].error).toMatch(/private|loopback|metadata|not allowed/i);
+  });
+
   it("calls fetch with AbortSignal for valid https URL", async () => {
     const svc = new AlertingService(db, {
       config: {
@@ -235,6 +287,8 @@ describe("AlertingService webhook dispatch", () => {
     expect(fetchSpy).toHaveBeenCalledOnce();
     const [, options] = fetchSpy.mock.calls[0];
     expect(options.signal).toBeInstanceOf(AbortSignal);
+    expect(options.dispatcher).toBeDefined();
+    expect(options.redirect).toBe("manual");
   });
 
   it("does not include sensitive fields in posted body", async () => {

@@ -9,7 +9,7 @@ import {
 } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { validateWebhookUrl, redactSecrets } from "./alerting.js";
+import { fetchWebhookUrl, validateWebhookUrl, redactSecrets } from "./alerting.js";
 import { getEventBus, type EventPayload, type TeletonEvent } from "./event-bus.js";
 import { createLogger } from "../utils/logger.js";
 import { TELETON_ROOT } from "../workspace/paths.js";
@@ -241,7 +241,7 @@ export class WebhookDispatcher {
   }
 
   createWebhook(input: WebhookInput): WebhookRegistration {
-    validateWebhookUrl(input.url);
+    validateWebhookUrl(input.url, { resolve: false });
     const id = randomUUID();
     const events = normalizeEvents(input.events);
     const secret =
@@ -289,7 +289,7 @@ export class WebhookDispatcher {
     if (!existing) return null;
 
     const url = input.url ?? existing.url;
-    validateWebhookUrl(url);
+    validateWebhookUrl(url, { resolve: false });
     const events = input.events ? normalizeEvents(input.events) : existing.events;
     const maxRetries =
       input.maxRetries !== undefined ? clampMaxRetries(input.maxRetries) : existing.maxRetries;
@@ -426,8 +426,7 @@ export class WebhookDispatcher {
     const attemptedAt = nowMs();
 
     try {
-      validateWebhookUrl(webhook.url);
-      const response = await fetch(webhook.url, {
+      const response = await fetchWebhookUrl(webhook.url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

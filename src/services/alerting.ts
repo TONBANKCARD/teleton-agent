@@ -1,12 +1,18 @@
 import type { Database } from "better-sqlite3";
 import type { AnomalyDetectionConfig, AnomalyEvent } from "./anomaly-detector.js";
-import { validateOutboundUrl } from "./outbound-url-guard.js";
+import {
+  fetchValidatedOutboundUrl,
+  validateOutboundUrl,
+  validateResolvedOutboundUrl,
+  type OutboundFetchResponse,
+} from "./outbound-url-guard.js";
 import { getNotificationService, notificationBus } from "./notifications.js";
 import { createLogger } from "../utils/logger.js";
 
 const log = createLogger("Alerting");
 
 const WEBHOOK_TIMEOUT_MS = 5_000;
+const WEBHOOK_URL_GUARD = { allowedProtocols: ["https:"] as const, label: "Webhook URL" };
 
 const SECRET_FIELDS = new Set([
   "apikey",
@@ -21,8 +27,25 @@ const SECRET_FIELDS = new Set([
  * Validates a webhook URL for SSRF safety.
  * Throws if the URL is not https: or targets a private/loopback/link-local address.
  */
-export function validateWebhookUrl(raw: string): void {
-  validateOutboundUrl(raw, { allowedProtocols: ["https:"], label: "Webhook URL" });
+export function validateWebhookUrl(raw: string): Promise<void>;
+export function validateWebhookUrl(raw: string, options: { resolve: false }): void;
+export function validateWebhookUrl(
+  raw: string,
+  options?: { resolve?: boolean }
+): Promise<void> | void {
+  if (options?.resolve === false) {
+    validateOutboundUrl(raw, WEBHOOK_URL_GUARD);
+    return;
+  }
+
+  return validateResolvedOutboundUrl(raw, WEBHOOK_URL_GUARD).then(() => undefined);
+}
+
+export async function fetchWebhookUrl(
+  raw: string,
+  init: RequestInit
+): Promise<OutboundFetchResponse> {
+  return fetchValidatedOutboundUrl(raw, init, WEBHOOK_URL_GUARD);
 }
 
 /**
@@ -153,7 +176,6 @@ export class AlertingService {
 
     if (alerting.webhook_url) {
       try {
-        validateWebhookUrl(alerting.webhook_url);
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
         try {
@@ -162,7 +184,7 @@ export class AlertingService {
             anomaly: redactSecrets(event as unknown as Record<string, unknown>),
             message,
           };
-          const response = await fetch(alerting.webhook_url, {
+          const response = await fetchWebhookUrl(alerting.webhook_url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),

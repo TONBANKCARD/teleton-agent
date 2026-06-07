@@ -8,6 +8,12 @@ import {
   resetWebhookDispatcherForTesting,
 } from "../webhook-dispatcher.js";
 
+const dnsMocks = vi.hoisted(() => ({
+  lookup: vi.fn(),
+}));
+
+vi.mock("node:dns/promises", () => dnsMocks);
+
 const WEBHOOK_TEST_KEY = "11".repeat(32);
 
 function makeEvent(type = "agent.message.received"): TeletonEvent {
@@ -32,6 +38,8 @@ describe("WebhookDispatcher", () => {
     db = new Database(":memory:");
     fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204, text: vi.fn() });
     vi.stubGlobal("fetch", fetchMock);
+    dnsMocks.lookup.mockReset();
+    dnsMocks.lookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
   });
 
   afterEach(() => {
@@ -103,6 +111,25 @@ describe("WebhookDispatcher", () => {
     expect(delivery.status).toBe("failed");
     expect(delivery.attempts).toBe(1);
     expect(delivery.error).toContain("HTTP 503");
+  });
+
+  it("blocks deliveries when the webhook hostname resolves to a metadata IP", async () => {
+    dnsMocks.lookup.mockResolvedValueOnce([{ address: "169.254.169.254", family: 4 }]);
+    const dispatcher = getWebhookDispatcher(db);
+    dispatcher.createWebhook({
+      url: "https://rebind.example.com/teleton",
+      events: ["agent.message.received"],
+      secret: "top-secret",
+      maxRetries: 3,
+    });
+
+    const [delivery] = await dispatcher.dispatchEvent(makeEvent());
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(delivery.status).toBe("failed");
+    expect(delivery.attempts).toBe(1);
+    expect(delivery.nextAttemptAt).toBeNull();
+    expect(delivery.error).toMatch(/private|loopback|metadata|not allowed/i);
   });
 
   it("skips webhooks that are not subscribed to the event type", async () => {
