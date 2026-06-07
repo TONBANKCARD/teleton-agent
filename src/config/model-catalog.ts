@@ -440,9 +440,9 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
   ],
   nvidia: [
     {
-      value: "google/gemma-3n-e4b-it",
-      name: "gemma-3n-e4b-it",
-      description: "Current NVIDIA text, audio and image input model",
+      value: "z-ai/glm-5.1",
+      name: "GLM-5.1",
+      description: "GLM (General Language Model) with DSA (Dense-Sparse-Alternating)",
     },
     {
       value: "minimaxai/minimax-m2.7",
