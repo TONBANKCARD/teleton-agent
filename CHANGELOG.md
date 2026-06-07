@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.34](https://github.com/xlabtg/teleton-agent/compare/v0.8.33...v0.8.34) (2026-06-07)
+
+
+### Bug Fixes
+
+* отключить native tools для NVIDIA GLM-5.1 ([c4ed8f9](https://github.com/xlabtg/teleton-agent/commit/c4ed8f90654aad5a96e9ef05e0e025d7af19f21d))
+* отключить native tools для NVIDIA GLM-5.1 ([819e84c](https://github.com/xlabtg/teleton-agent/commit/819e84c2466da4b7ef07379d45f15bace57a53ac))
+
 ## [0.8.33](https://github.com/xlabtg/teleton-agent/compare/v0.8.32...v0.8.33) (2026-06-07)
 
 
