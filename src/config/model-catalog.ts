@@ -450,9 +450,14 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       description: "Current NVIDIA preview coding model",
     },
     {
-      value: "z-ai/glm-4.7",
-      name: "GLM-4.7",
-      description: "Current NVIDIA preview Tool+Calling model",
+      value: "openai/gpt-oss-20b",
+      name: "GPT OSS 20B Overview",
+      description: "OpenAI releases the gpt-oss family of open-weight models designed for powerful reasoning, agentic tasks, and versatile developer use cases",
+    },
+    {
+      value: "openai/gpt-oss-120b",
+      name: "GPT OSS 120B Overview",
+      description: "OpenAI releases the gpt-oss family of open-weight models designed for powerful reasoning, agentic tasks, and versatile developer use cases",
     },
     {
       value: "meta/llama-3.1-8b-instruct",
@@ -485,9 +490,19 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       description: "Current NVIDIA preview coding model",
     },
     {
-      value: "mistralai/devstral-2-123b-instruct-2512",
-      name: "Devstral 2 123B",
-      description: "Current NVIDIA preview large instruct model",
+      value: "qwen/qwen3.5-122b-a10b",
+      name: "Qwen3.5-122B-A10B",
+      description: "Current NVIDIA preview coding model",
+    },
+    {
+      value: "qwen/qwen3.5-397b-a17b",
+      name: "Qwen3.5-397B-A17B",
+      description: "Current NVIDIA preview coding model",
+    },
+    {
+      value: "mistralai/mistral-small-4-119b-2603",
+      name: "Mistral Small 4 119B A6B",
+      description: "Mistral Small 4 is a powerful hybrid model capable of acting as both a general instruction model and a reasoning model. It unifies the capabilities of three different model families—Instruct, Reasoning (previously called Magistral), and Devstral—into a single, unified model",
     },
     {
       value: "deepseek-ai/deepseek-v3.1-terminus",
@@ -495,9 +510,19 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       description: "Current NVIDIA preview reasoning/chat model",
     },
     {
-      value: "moonshotai/kimi-k2-instruct-0905",
-      name: "Kimi K2 Instruct 0905",
+      value: "deepseek-ai/deepseek-v4-flash",
+      name: "DeepSeek V4 Flesh",
+      description: "Current NVIDIA preview reasoning/chat model",
+    },
+    {
+      value: "moonshotai/kimi-k2.6",
+      name: "Kimi-K2.6",
       description: "Current NVIDIA preview instruct model",
+    },
+    {
+      value: "stepfun-ai/step-3.7-flash",
+      name: "Step 3.7 Flash",
+      description: "Current NVIDIA preview fast chat model",
     },
     {
       value: "stepfun-ai/step-3.5-flash",
