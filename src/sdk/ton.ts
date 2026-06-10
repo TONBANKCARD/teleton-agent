@@ -221,6 +221,14 @@ export function createTonSDK(log: PluginLogger, db: Database.Database | null): T
 
       const maxAgeMinutes = params.maxAgeMinutes ?? DEFAULT_MAX_AGE_MINUTES;
 
+      if (params.since === undefined) {
+        log.warn(
+          "ton.verifyPayment() called without `since` — only the upper time bound is enforced, " +
+            "so a pre-existing payment can satisfy this request (replay risk). " +
+            "Pass `since` (the request/deal creation time in ms) to close this window."
+        );
+      }
+
       // Opportunistic cleanup of old transactions
       cleanupOldTransactions(db, DEFAULT_TX_RETENTION_DAYS, log);
 
@@ -238,8 +246,16 @@ export function createTonSDK(log: PluginLogger, db: Database.Database | null): T
           // Amount match (1% tolerance)
           if (tonAmount < params.amount * PAYMENT_TOLERANCE_RATIO) continue;
 
-          // Time window
+          // Upper time bound: reject transactions older than the max age window
           if (tx.secondsAgo > maxAgeMinutes * 60) continue;
+
+          // Lower time bound: reject transactions that settled before the request
+          // was created. Without this, an unrelated payment of the right amount
+          // made before the deal existed could satisfy it (replay/double-spend).
+          if (params.since !== undefined) {
+            const txTimeMs = Date.now() - tx.secondsAgo * 1000;
+            if (txTimeMs < params.since) continue;
+          }
 
           // Memo match (case-insensitive, strip @)
           const memo = (tx.comment ?? "").trim().toLowerCase().replace(/^@/, "");

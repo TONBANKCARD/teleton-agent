@@ -1167,6 +1167,65 @@ describe("createTonSDK", () => {
       expect(result.verified).toBe(true);
     });
 
+    it("rejects transactions older than the request time (since)", async () => {
+      // Transaction settled 60s ago — within maxAge, but BEFORE the request.
+      vi.spyOn(sdkWithDb, "getTransactions").mockResolvedValue([
+        {
+          type: "ton_received",
+          hash: "stalehash",
+          amount: "1 TON",
+          from: "EQSender",
+          comment: "memo1",
+          date: "2025-01-01T00:00:00Z",
+          secondsAgo: 60,
+          explorer: "",
+        },
+      ]);
+
+      const result = await sdkWithDb.verifyPayment({
+        amount: 1,
+        memo: "memo1",
+        gameType: "dice",
+        since: Date.now(), // request created "now" — the tx predates it
+      });
+
+      expect(result.verified).toBe(false);
+    });
+
+    it("accepts a transaction that settled after the request time (since)", async () => {
+      // Request created 2 minutes ago; transaction settled 60s ago (after it).
+      vi.spyOn(sdkWithDb, "getTransactions").mockResolvedValue([
+        {
+          type: "ton_received",
+          hash: "freshhash",
+          amount: "1 TON",
+          from: "EQSender",
+          comment: "memo1",
+          date: "2025-01-01T00:00:00Z",
+          secondsAgo: 60,
+          explorer: "",
+        },
+      ]);
+
+      const result = await sdkWithDb.verifyPayment({
+        amount: 1,
+        memo: "memo1",
+        gameType: "dice",
+        since: Date.now() - 120_000,
+      });
+
+      expect(result.verified).toBe(true);
+      expect(result.txHash).toBe("freshhash");
+    });
+
+    it("warns when `since` is omitted (replay window left open)", async () => {
+      vi.spyOn(sdkWithDb, "getTransactions").mockResolvedValue([]);
+
+      await sdkWithDb.verifyPayment({ amount: 1, memo: "memo1", gameType: "dice" });
+
+      expect(mockLog.warn).toHaveBeenCalledWith(expect.stringContaining("without `since`"));
+    });
+
     it("prevents replay: same tx_hash cannot be used twice", async () => {
       vi.spyOn(sdkWithDb, "getTransactions").mockResolvedValue([
         {
