@@ -322,6 +322,7 @@ export class PipelineExecutor {
         timestamp: Date.now(),
         isGroup: false,
         pendingContext: JSON.stringify(context),
+        signal: options.signal,
       });
       return response.content;
     }

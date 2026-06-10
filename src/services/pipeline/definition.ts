@@ -154,6 +154,16 @@ const MAX_OUTPUT_LENGTH = 80;
 const STEP_ID_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const OUTPUT_PATTERN = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
 
+const TERMINAL_RUN_STATUSES: ReadonlySet<PipelineStatus> = new Set([
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+function isTerminalRunStatus(status: PipelineStatus): boolean {
+  return TERMINAL_RUN_STATUSES.has(status);
+}
+
 function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
@@ -621,6 +631,9 @@ export class PipelineStore {
   ): PipelineRun | null {
     const existing = this.getRun(runId);
     if (!existing) return null;
+    // Once a run reaches a terminal status it is immutable: reject late writes
+    // from orphaned step executions that kept running after a timeout/cancel.
+    if (isTerminalRunStatus(existing.status)) return existing;
     const now = nowSeconds();
     this.db
       .prepare(
@@ -658,6 +671,13 @@ export class PipelineStore {
       completedAt: number | null;
     }>
   ): PipelineRunStep | null {
+    // Reject step writes once the parent run is terminal — an orphaned step
+    // (e.g. a primary agent that kept running past a timeout) must not flip a
+    // failed/cancelled run's step back to "completed".
+    const run = this.getRun(runId);
+    if (run && isTerminalRunStatus(run.status)) {
+      return this.getRunSteps(runId).find((step) => step.stepId === stepId) ?? null;
+    }
     const existing = this.getRunSteps(runId).find((step) => step.stepId === stepId);
     if (!existing) return null;
     const now = nowSeconds();

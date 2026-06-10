@@ -415,6 +415,71 @@ describe("PipelineExecutor", () => {
     expect(detail.steps[1].error).toContain("Pipeline timed out after 1 seconds");
   });
 
+  it("forwards an AbortSignal to the primary agent and aborts it on step timeout", async () => {
+    vi.useFakeTimers();
+    let capturedSignal: AbortSignal | undefined;
+    // Simulate a slow agentic run that only stops when the signal aborts.
+    const processMessage = vi.fn((opts: { signal?: AbortSignal }) => {
+      capturedSignal = opts.signal;
+      return new Promise(() => undefined);
+    });
+    const pipeline = store.create({
+      name: "primary abort",
+      steps: [
+        {
+          id: "slow",
+          agent: "primary",
+          action: "run several slow tool calls",
+          output: "out",
+          timeoutSeconds: 1,
+        },
+      ],
+    });
+    const executor = new PipelineExecutor({
+      store,
+      agent: { processMessage } as unknown as ConstructorParameters<
+        typeof PipelineExecutor
+      >[0]["agent"],
+    });
+
+    const promise = executor.execute(pipeline);
+    await vi.advanceTimersByTimeAsync(1_000);
+    const detail = await promise;
+
+    expect(detail.run.status).toBe("failed");
+    expect(detail.steps[0].status).toBe("failed");
+    expect(detail.steps[0].error).toContain('Pipeline step "slow" timed out after 1 seconds');
+    // The primary agent received a signal and it was aborted at the timeout so
+    // the underlying run can stop instead of executing tools detached.
+    expect(capturedSignal).toBeInstanceOf(AbortSignal);
+    expect(capturedSignal?.aborted).toBe(true);
+  });
+
+  it("rejects step and run writes after the run reaches a terminal status", () => {
+    const pipeline = store.create({
+      name: "terminal guard",
+      steps: [{ id: "only", agent: "primary", action: "work", output: "out" }],
+    });
+    const run = store.createRun(pipeline);
+    const seconds = Math.floor(Date.now() / 1000);
+    store.updateRun(run.id, { status: "running", startedAt: seconds });
+    store.updateRun(run.id, { status: "failed", error: "timed out", completedAt: seconds });
+
+    // Orphaned step execution tries to flip the failed run's step to completed.
+    const stepAfter = store.updateStep(run.id, "only", {
+      status: "completed",
+      outputValue: "late output",
+      completedAt: seconds + 5,
+    });
+    expect(stepAfter?.status).not.toBe("completed");
+    expect(stepAfter?.outputValue).not.toBe("late output");
+
+    // Orphaned run write tries to overwrite the terminal status.
+    const runAfter = store.updateRun(run.id, { status: "completed", error: null });
+    expect(runAfter?.status).toBe("failed");
+    expect(runAfter?.error).toBe("timed out");
+  });
+
   it("fails a hung managed-agent step when only the pipeline run timeout is configured", async () => {
     vi.useFakeTimers();
     const waitForMessageResult = vi.fn(() => new Promise(() => undefined));

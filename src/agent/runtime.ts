@@ -189,6 +189,12 @@ export interface ProcessMessageOptions {
   replyContext?: { senderName?: string; text: string; isAgent?: boolean };
   isHeartbeat?: boolean;
   taskId?: string;
+  /**
+   * Optional abort signal. When it fires (e.g. a pipeline step timeout or run
+   * cancellation), the agentic loop stops issuing further LLM/tool calls instead
+   * of running detached after the caller has already given up on the result.
+   */
+  signal?: AbortSignal;
 }
 
 export interface AgentResponse {
@@ -372,6 +378,7 @@ export class AgentRuntime {
       replyContext,
       isHeartbeat,
       taskId,
+      signal,
     } = opts;
 
     const effectiveIsGroup = isGroup ?? false;
@@ -812,6 +819,14 @@ export class AgentRuntime {
         iteration++;
         log.debug(`🔄 Agentic iteration ${iteration}/${maxIterations}`);
 
+        // Honor caller-supplied abort (pipeline step timeout / run cancellation):
+        // stop the loop before issuing another LLM request so the run does not
+        // keep executing detached after the caller has given up on the result.
+        if (signal?.aborted) {
+          log.info(`🛑 Aborted before iteration ${iteration}/${maxIterations} — stopping loop`);
+          break;
+        }
+
         // Track where current iteration starts so masking won't truncate its results
         const iterationStartIndex = context.messages.length;
 
@@ -1114,6 +1129,14 @@ export class AgentRuntime {
           break;
         }
 
+        // Abort can fire while the LLM request was in flight — bail out before
+        // running any tool calls (which may have financial side effects).
+        if (signal?.aborted) {
+          log.info(`🛑 Aborted before executing ${toolCalls.length} tool call(s) — stopping loop`);
+          finalResponse = response;
+          break;
+        }
+
         log.debug(`🔧 Executing ${toolCalls.length} tool call(s)`);
 
         context.messages.push(response.message);
@@ -1202,6 +1225,16 @@ export class AgentRuntime {
             while (cursor < toolPlans.length) {
               const idx = cursor++;
               const plan = toolPlans[idx];
+
+              // Stop launching new tool calls once the run is aborted; tools
+              // already in flight finish, but no further side effects start.
+              if (signal?.aborted) {
+                execResults[idx] = {
+                  result: { success: false, error: "Run aborted" },
+                  durationMs: 0,
+                };
+                continue;
+              }
 
               if (plan.blocked) {
                 const auditInvokeEventId = this.recordAuditEvent(
@@ -1467,6 +1500,14 @@ export class AgentRuntime {
           log.info(`⚠️ Max iterations reached (${maxIterations})`);
           finalResponse = response;
         }
+      }
+
+      // If the run was aborted, skip post-processing (self-correction, hooks,
+      // memory indexing) entirely — the caller has already moved on and these
+      // steps would only waste tokens/latency on a result nobody is awaiting.
+      if (signal?.aborted) {
+        log.info("🛑 Run aborted — skipping post-processing");
+        return { content: "", toolCalls: totalToolCalls };
       }
 
       if (!finalResponse) {
