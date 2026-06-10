@@ -2,7 +2,13 @@ import { Hono } from "hono";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { WebUIServerDeps, APIResponse } from "../types.js";
-import { readRawConfig, writeRawConfig } from "../../config/configurable-keys.js";
+import {
+  CONFIGURABLE_KEYS,
+  getNestedValue,
+  setNestedValue,
+  readRawConfig,
+  writeRawConfig,
+} from "../../config/configurable-keys.js";
 import {
   getBlocklistConfig,
   setBlocklistConfig,
@@ -12,6 +18,7 @@ import {
   setRulesConfig,
 } from "../../agent/hooks/user-hook-store.js";
 import { WORKSPACE_ROOT } from "../../workspace/paths.js";
+import { IMMUTABLE_FILES } from "../../workspace/validator.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { clearPromptCache } from "../../soul/loader.js";
 
@@ -139,24 +146,27 @@ export function createExportImportRoutes(deps: WebUIServerDeps) {
 
       if (options.config && bundle.config) {
         const existing = readRawConfig(deps.configPath);
-        // Merge: keep existing sensitive values, overwrite the rest
-        const merged = { ...existing, ...bundle.config };
-        // Restore sensitive values from existing config
-        for (const key of SENSITIVE_KEYS) {
-          const parts = key.split(".");
-          let existingObj: Record<string, unknown> = existing;
-          let mergedObj: Record<string, unknown> = merged;
-          for (let i = 0; i < parts.length - 1; i++) {
-            if (existingObj[parts[i]] && typeof existingObj[parts[i]] === "object") {
-              existingObj = existingObj[parts[i]] as Record<string, unknown>;
-            }
-            if (mergedObj[parts[i]] && typeof mergedObj[parts[i]] === "object") {
-              mergedObj = mergedObj[parts[i]] as Record<string, unknown>;
-            }
-          }
-          const last = parts[parts.length - 1];
-          if (last in existingObj && existingObj[last] != null) {
-            (mergedObj as Record<string, unknown>)[last] = existingObj[last];
+        // Deep-copy existing so all non-configurable keys (e.g. webui.auth_token_hash)
+        // are preserved and the shallow-merge attack surface is eliminated.
+        const merged = JSON.parse(JSON.stringify(existing)) as Record<string, unknown>;
+        // Only apply keys that are in the CONFIGURABLE_KEYS allowlist.
+        // This prevents setting arbitrary/security-sensitive fields not exposed in the UI.
+        for (const [key, meta] of Object.entries(CONFIGURABLE_KEYS)) {
+          const importedValue = getNestedValue(bundle.config as Record<string, unknown>, key);
+          if (importedValue === undefined || importedValue === null) continue;
+          if (meta.type === "array") {
+            if (!Array.isArray(importedValue)) continue;
+            const allValid = importedValue.every((item) => !meta.validate(String(item)));
+            if (!allValid) continue;
+            setNestedValue(
+              merged,
+              key,
+              importedValue.map((item) => meta.parse(String(item)))
+            );
+          } else {
+            const valueStr = String(importedValue);
+            if (meta.validate(valueStr)) continue;
+            setNestedValue(merged, key, meta.parse(valueStr));
           }
         }
         writeRawConfig(merged, deps.configPath);
@@ -190,6 +200,9 @@ export function createExportImportRoutes(deps: WebUIServerDeps) {
       if (options.soul && bundle.soul) {
         const { writeFileSync } = await import("node:fs");
         for (const filename of SOUL_FILES) {
+          // Honor IMMUTABLE_FILES: SOUL.md, STRATEGY.md, SECURITY.md cannot be
+          // overwritten via import (they are owner-only configuration files).
+          if (IMMUTABLE_FILES.includes(filename)) continue;
           if (bundle.soul[filename] !== undefined) {
             const filePath = join(WORKSPACE_ROOT, filename);
             writeFileSync(filePath, bundle.soul[filename], "utf-8");

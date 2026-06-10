@@ -208,7 +208,7 @@ export function validateReadPath(inputPath: string): ValidatedPath {
  * Extension whitelist is now OPTIONAL (fix from audit)
  */
 // Owner configuration files that cannot be overwritten by the agent
-const IMMUTABLE_FILES = ["SOUL.md", "STRATEGY.md", "SECURITY.md"];
+export const IMMUTABLE_FILES: readonly string[] = ["SOUL.md", "STRATEGY.md", "SECURITY.md"];
 
 export function validateWritePath(
   inputPath: string,
