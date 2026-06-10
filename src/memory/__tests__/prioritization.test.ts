@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import Database from "better-sqlite3";
 import { ensureSchema } from "../schema.js";
 import { MemoryScorer } from "../scoring.js";
@@ -90,6 +90,24 @@ describe("memory prioritization", () => {
     expect(important!.centrality).toBeGreaterThan(0);
     expect(important!.score).toBeGreaterThanOrEqual(0);
     expect(important!.score).toBeLessThanOrEqual(1);
+  });
+
+  it("does not recalculate all scores on getStats", () => {
+    insertKnowledge(db, "plain", "casual note about lunch");
+    insertKnowledge(db, "important", "remember this wallet recovery decision about TON");
+
+    const scorer = new MemoryScorer(db);
+    // Persist scores once so getStats has data to read.
+    scorer.recalculateAll();
+
+    const recalculateAll = vi.spyOn(scorer, "recalculateAll");
+    const recalculate = vi.spyOn(scorer, "recalculate");
+
+    const stats = scorer.getStats();
+
+    expect(recalculateAll).not.toHaveBeenCalled();
+    expect(recalculate).not.toHaveBeenCalled();
+    expect(stats.total).toBe(2);
   });
 
   it("archives low-value cleanup candidates and protects pinned memories", async () => {

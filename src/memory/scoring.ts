@@ -333,7 +333,11 @@ export class MemoryScorer {
   }
 
   getStats(bucketCount = 10): MemoryScoreStats {
-    this.recalculateAll();
+    // Read-only: report already-persisted scores instead of forcing a full
+    // recompute on every call. Recalculation is driven on a schedule by
+    // MemoryPrioritizationScheduler (or on explicit demand via
+    // recalculateAll), so a stats/dashboard read stays O(N read) and never
+    // triggers the O(N·M) centrality pass.
     const safeBucketCount = Math.max(1, Math.min(50, Math.floor(bucketCount)));
     const rows = this.db.prepare(`SELECT score, pinned FROM memory_scores`).all() as Array<{
       score: number;
