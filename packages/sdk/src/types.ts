@@ -586,6 +586,15 @@ export interface SDKVerifyPaymentParams {
   gameType: string;
   /** Maximum age of valid payments in minutes (default: 10) */
   maxAgeMinutes?: number;
+  /**
+   * Lower time bound as a Unix timestamp in **milliseconds** (e.g. `Date.now()`
+   * captured when the payment request/deal was created). Transactions that
+   * settled before this moment are rejected, so a pre-existing payment of the
+   * same amount cannot satisfy a new request (replay/double-spend protection).
+   * Strongly recommended — omitting it leaves only the upper `maxAgeMinutes`
+   * bound, which accepts any sufficiently recent transaction.
+   */
+  since?: number;
 }
 
 /** Result of payment verification */

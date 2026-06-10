@@ -411,7 +411,8 @@ const result = await sdk.ton.verifyPayment({
   amount: 1.0,                // Expected amount
   memo: event.senderUsername,  // Expected comment
   gameType: "casino_spin",    // Replay group (prevents double-spend)
-  maxAgeMinutes: 10,          // Time window
+  maxAgeMinutes: 10,          // Upper time bound
+  since: deal.createdAt,      // Lower time bound (ms) — reject txs older than the request
 });
 
 if (result.verified) {
@@ -422,6 +423,8 @@ if (result.verified) {
 ```
 
 Note: `verifyPayment` requires a `used_transactions` table in your plugin's database. See [Database Migrations](#database-migrations).
+
+> **Security:** Always pass `since` with the timestamp (in milliseconds, e.g. `Date.now()`) of the moment the payment was requested or the deal was created. The `used_transactions` table only prevents the *same* transaction from being consumed twice — it does not stop a pre-existing payment of the right amount (made before the deal existed) from satisfying a new request. Without `since`, only the upper `maxAgeMinutes` bound is enforced, leaving a replay/double-spend window open.
 
 #### Jetton Analytics
 
