@@ -440,6 +440,69 @@ describe("AutonomousTaskManager", () => {
       queuedManager.stopAll();
     });
 
+    // ─── Regression: issue #533 ──────────────────────────────────────────────
+    // restoreInterruptedTasks() used to call runLoop() unconditionally for every
+    // 'running'/'pending' task, bypassing the maxParallelTasks gate. After a
+    // crash with more active tasks than the cap, restart would start them all at
+    // once and exceed the concurrency limit.
+    it("respects maxParallelTasks when restoring interrupted 'running' tasks (issue #533)", async () => {
+      const localDb = new Database(":memory:");
+      localDb.pragma("foreign_keys = ON");
+      ensureSchema(localDb);
+      const store = getAutonomousTaskStore(localDb);
+
+      const MAX = 10;
+      const TOTAL = 15;
+      // Persist more 'running' tasks than the cap, as if a crash interrupted them.
+      const ids: string[] = [];
+      for (let i = 0; i < TOTAL; i++) {
+        const t = store.createTask({ goal: `Crashed ${i}` });
+        store.updateTaskStatus(t.id, "running");
+        ids.push(t.id);
+      }
+
+      const freshManager = new AutonomousTaskManager(localDb, hangingDeps(), {
+        maxParallelTasks: MAX,
+      });
+      const restored = await freshManager.restoreInterruptedTasks();
+      // All 15 are accounted for (started or re-queued)…
+      expect(restored).toBe(TOTAL);
+      // …but concurrent loops never exceed the cap.
+      expect(freshManager.getRunningTaskIds().length).toBeLessThanOrEqual(MAX);
+      expect(freshManager.getRunningTaskIds()).toHaveLength(MAX);
+
+      // The overflow tasks are parked as 'queued' in storage rather than left
+      // claiming to be 'running' while idle.
+      const queuedInDb = ids.filter((id) => store.getTask(id)?.status === "queued");
+      expect(queuedInDb).toHaveLength(TOTAL - MAX);
+
+      freshManager.stopAll();
+      localDb.close();
+    });
+
+    it("respects maxParallelTasks when restoring interrupted 'pending' tasks (issue #533)", async () => {
+      const localDb = new Database(":memory:");
+      localDb.pragma("foreign_keys = ON");
+      ensureSchema(localDb);
+      const store = getAutonomousTaskStore(localDb);
+
+      const MAX = 3;
+      const TOTAL = 8;
+      for (let i = 0; i < TOTAL; i++) {
+        store.createTask({ goal: `Pending ${i}` });
+      }
+
+      const freshManager = new AutonomousTaskManager(localDb, hangingDeps(), {
+        maxParallelTasks: MAX,
+      });
+      const restored = await freshManager.restoreInterruptedTasks();
+      expect(restored).toBe(TOTAL);
+      expect(freshManager.getRunningTaskIds()).toHaveLength(MAX);
+
+      freshManager.stopAll();
+      localDb.close();
+    });
+
     it("restoreInterruptedTasks() re-enqueues 'queued' tasks from DB", async () => {
       const store = getAutonomousTaskStore(db);
       // Simulate a task that was 'queued' before a restart

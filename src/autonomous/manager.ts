@@ -194,6 +194,28 @@ export class AutonomousTaskManager {
     let restored = 0;
 
     for (const task of active) {
+      if (task.status !== "running" && task.status !== "pending" && task.status !== "queued") {
+        continue;
+      }
+
+      // Every restore path is gated on the same concurrency cap as startTask().
+      // Without this, a crash with more than maxParallelTasks active tasks would
+      // restart them all at once and blow past the limit (issue #533). Overflow
+      // tasks are parked in the in-memory queue and drain automatically as
+      // running loops finish (see runLoop's `.finally()`).
+      if (this.runningLoops.size >= this.config.maxParallelTasks) {
+        log.info({ taskId: task.id }, "Parallel limit reached on restore — queueing task");
+        // Reflect the parked state in storage so the DB doesn't keep claiming a
+        // "running"/"pending" task is active while it sits idle in the queue.
+        const queued =
+          task.status === "queued"
+            ? task
+            : (this.store.updateTaskStatus(task.id, "queued") ?? task);
+        this.taskQueue.push(queued);
+        restored++;
+        continue;
+      }
+
       if (task.status === "running") {
         log.info({ taskId: task.id }, "Restoring interrupted task from checkpoint");
         this.store.appendLog({
@@ -203,7 +225,6 @@ export class AutonomousTaskManager {
           message: "Agent restarted — resuming from last checkpoint",
         });
         this.runLoop(task);
-        restored++;
       } else if (task.status === "pending") {
         log.info({ taskId: task.id }, "Starting queued pending task");
         this.store.appendLog({
@@ -213,21 +234,11 @@ export class AutonomousTaskManager {
           message: "Agent started — starting queued task",
         });
         this.runLoop(task);
-        restored++;
-      } else if (task.status === "queued") {
-        log.info({ taskId: task.id }, "Re-enqueueing task that was waiting for a slot");
-        this.taskQueue.push(task);
-        restored++;
+      } else {
+        log.info({ taskId: task.id }, "Starting restored queued task");
+        this.runLoop(task);
       }
-    }
-
-    // Drain the queue into any available slots left after restoring running tasks.
-    while (this.taskQueue.length > 0 && this.runningLoops.size < this.config.maxParallelTasks) {
-      const next = this.taskQueue.shift();
-      if (next) {
-        log.info({ taskId: next.id }, "Starting restored queued task");
-        this.runLoop(next);
-      }
+      restored++;
     }
 
     return restored;
