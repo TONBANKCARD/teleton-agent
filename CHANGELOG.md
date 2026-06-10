@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.36](https://github.com/xlabtg/teleton-agent/compare/v0.8.35...v0.8.36) (2026-06-10)
+
+
+### Bug Fixes
+
+* **security:** ограничить конфиг-импорт разрешёнными ключами и защитить иммутируемые soul-файлы ([91a84cb](https://github.com/xlabtg/teleton-agent/commit/91a84cb352b6d93f91ae2c486ddf8da994cf8426))
+* **security:** ограничить конфиг-импорт разрешёнными ключами и защитить иммутируемые soul-файлы ([0f6aef8](https://github.com/xlabtg/teleton-agent/commit/0f6aef881f87513bd663e6eaf2534fbd661e43bf)), closes [#531](https://github.com/xlabtg/teleton-agent/issues/531)
+
+
+### Documentation
+
+* обновить версию форка в README до 0.8.35 ([5949a5d](https://github.com/xlabtg/teleton-agent/commit/5949a5d7c2fbcac52412af1472ba8de7363348a3))
+
 ## [0.8.35](https://github.com/xlabtg/teleton-agent/compare/v0.8.34...v0.8.35) (2026-06-07)
 
 
