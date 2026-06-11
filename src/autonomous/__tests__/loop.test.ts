@@ -115,6 +115,27 @@ describe("AutonomousLoop", () => {
     expect(updated!.status).toBe("paused");
   });
 
+  it("fails before execution when a TON-spending action omits declared tonAmount", async () => {
+    const spendTask = store.createTask({
+      goal: "Spend too much",
+      constraints: { maxIterations: 3, budgetTON: 0.5 },
+    });
+    const deps = makeDeps({
+      planNextAction: vi.fn().mockResolvedValue({
+        toolName: "ton_send",
+        params: { amount: 5 },
+      }),
+      evaluateSuccess: vi.fn().mockResolvedValue(false),
+    });
+
+    const loop = new AutonomousLoop(store, deps, DEFAULT_POLICY_CONFIG);
+    const result = await loop.run(spendTask);
+
+    expect(result.status).toBe("failed");
+    expect(result.error).toContain("exceeds budget");
+    expect(deps.executeTool).not.toHaveBeenCalled();
+  });
+
   // ─── Reflection adjustments ────────────────────────────────────────────────
 
   it("applies context adjustments from reflection", async () => {

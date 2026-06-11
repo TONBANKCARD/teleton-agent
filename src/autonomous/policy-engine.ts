@@ -41,7 +41,19 @@ export const DEFAULT_POLICY_CONFIG: PolicyConfig = {
     daily: 0.5,
     requireConfirmationAbove: 0.05,
   },
-  restrictedTools: ["ton_send", "jetton_send", "exec", "exec_run"],
+  restrictedTools: [
+    "ton_send",
+    "jetton_send",
+    "dns_start_auction",
+    "dns_bid",
+    "dns_link",
+    "dns_unlink",
+    "dns_set_site",
+    "stonfi_swap",
+    "dedust_swap",
+    "exec",
+    "exec_run",
+  ],
   requireHumanApproval: "above-threshold",
   uncertainty: {
     threshold: 0.7,
@@ -72,6 +84,7 @@ export interface PolicyEngineState {
 
 export type PolicyViolation =
   | { type: "budget_exceeded"; message: string; requiresConfirmation: boolean }
+  | { type: "invalid_ton_amount"; message: string; toolName?: string }
   | { type: "restricted_tool"; message: string; toolName: string }
   | { type: "ton_confirmation"; message: string; tonAmount: number }
   | { type: "loop_detected"; message: string }
@@ -83,6 +96,80 @@ export interface PolicyCheckResult {
   allowed: boolean;
   requiresEscalation: boolean;
   violations: PolicyViolation[];
+}
+
+export interface PolicyAction {
+  toolName?: string;
+  params?: Record<string, unknown>;
+  tonAmount?: number;
+  recentActions?: string[];
+}
+
+type TonSpend =
+  | { kind: "none" }
+  | { kind: "amount"; amount: number }
+  | { kind: "invalid"; message: string };
+
+const NATIVE_TON_ASSET = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c";
+const PARAM_AMOUNT_TON_TOOLS = new Set(["ton_send", "dns_start_auction", "dns_bid"]);
+const FIXED_TON_SPEND_BY_TOOL = new Map<string, number>([
+  ["jetton_send", 0.05],
+  ["dns_link", 0.05],
+  ["dns_unlink", 0.05],
+  ["dns_set_site", 0.05],
+]);
+const SWAP_TOOLS = new Set(["stonfi_swap", "dedust_swap"]);
+
+function isFiniteNonNegativeAmount(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function isPositiveAmount(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function isNativeTonAsset(value: unknown): boolean {
+  return typeof value === "string" && (value.toLowerCase() === "ton" || value === NATIVE_TON_ASSET);
+}
+
+function extractTonSpend(action: PolicyAction): TonSpend {
+  const toolName = action.toolName;
+  if (!toolName) return { kind: "none" };
+
+  if (PARAM_AMOUNT_TON_TOOLS.has(toolName)) {
+    const amount = action.params?.amount;
+    if (!isPositiveAmount(amount)) {
+      return {
+        kind: "invalid",
+        message: `Tool "${toolName}" requires a positive numeric params.amount for TON policy checks`,
+      };
+    }
+    return { kind: "amount", amount };
+  }
+
+  const fixedAmount = FIXED_TON_SPEND_BY_TOOL.get(toolName);
+  if (fixedAmount !== undefined) {
+    return { kind: "amount", amount: fixedAmount };
+  }
+
+  if (SWAP_TOOLS.has(toolName)) {
+    if (!isNativeTonAsset(action.params?.from_asset)) return { kind: "none" };
+
+    const amount = action.params?.amount;
+    if (!isPositiveAmount(amount)) {
+      return {
+        kind: "invalid",
+        message: `Tool "${toolName}" requires a positive numeric params.amount when swapping from TON`,
+      };
+    }
+    return { kind: "amount", amount };
+  }
+
+  if (action.tonAmount !== undefined && action.tonAmount > 0) {
+    return { kind: "amount", amount: action.tonAmount };
+  }
+
+  return { kind: "none" };
 }
 
 export class PolicyEngine {
@@ -134,14 +221,7 @@ export class PolicyEngine {
     if (this.onStateChange) this.onStateChange(this.serialize());
   }
 
-  checkAction(
-    task: AutonomousTask,
-    action: {
-      toolName?: string;
-      tonAmount?: number;
-      recentActions?: string[];
-    }
-  ): PolicyCheckResult {
+  checkAction(task: AutonomousTask, action: PolicyAction): PolicyCheckResult {
     const violations: PolicyViolation[] = [];
     let requiresEscalation = false;
     let blockingViolationCount = 0;
@@ -201,13 +281,30 @@ export class PolicyEngine {
       }
     }
 
-    // Check TON budget
-    if (action.tonAmount !== undefined && action.tonAmount > 0) {
+    if (action.tonAmount !== undefined && !isFiniteNonNegativeAmount(action.tonAmount)) {
+      violations.push({
+        type: "invalid_ton_amount",
+        message: `Declared tonAmount must be a finite non-negative number, got ${String(action.tonAmount)}`,
+        toolName: action.toolName,
+      });
+      blockingViolationCount++;
+    }
+
+    // Check TON budget against the amount derived from the real tool params.
+    const tonSpend = extractTonSpend(action);
+    if (tonSpend.kind === "invalid") {
+      violations.push({
+        type: "invalid_ton_amount",
+        message: tonSpend.message,
+        toolName: action.toolName,
+      });
+      blockingViolationCount++;
+    } else if (tonSpend.kind === "amount" && tonSpend.amount > 0) {
       const budgetTON = constraints.budgetTON ?? this.config.tonSpending.perTask;
-      if (action.tonAmount > budgetTON) {
+      if (tonSpend.amount > budgetTON) {
         violations.push({
           type: "budget_exceeded",
-          message: `TON amount ${action.tonAmount} exceeds budget ${budgetTON}`,
+          message: `TON amount ${tonSpend.amount} exceeds budget ${budgetTON}`,
           requiresConfirmation: true,
         });
         blockingViolationCount++;
@@ -216,11 +313,11 @@ export class PolicyEngine {
       // above the confirmation threshold should surface a dedicated
       // violation so the escalation message names TON explicitly, even
       // when the action is also blocked by the budget.
-      if (action.tonAmount > this.config.tonSpending.requireConfirmationAbove) {
+      if (tonSpend.amount > this.config.tonSpending.requireConfirmationAbove) {
         violations.push({
           type: "ton_confirmation",
-          message: `TON amount ${action.tonAmount} requires user confirmation (threshold: ${this.config.tonSpending.requireConfirmationAbove})`,
-          tonAmount: action.tonAmount,
+          message: `TON amount ${tonSpend.amount} requires user confirmation (threshold: ${this.config.tonSpending.requireConfirmationAbove})`,
+          tonAmount: tonSpend.amount,
         });
         requiresEscalation = true;
       }
@@ -311,10 +408,7 @@ export class PolicyEngine {
     return this.recentActions;
   }
 
-  satisfiesPolicies(
-    task: AutonomousTask,
-    action: Parameters<typeof this.checkAction>[1]
-  ): PolicyCheckResult {
+  satisfiesPolicies(task: AutonomousTask, action: PolicyAction): PolicyCheckResult {
     return this.checkAction(task, action);
   }
 }
