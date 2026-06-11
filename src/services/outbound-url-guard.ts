@@ -163,7 +163,7 @@ export async function createPinnedOutboundFetch(
 
       return fetch(input, {
         ...init,
-        redirect: init?.redirect ?? "manual",
+        redirect: "manual",
         dispatcher,
       } as FetchInitWithDispatcher);
     },

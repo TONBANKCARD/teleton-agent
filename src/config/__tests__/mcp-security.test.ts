@@ -30,7 +30,10 @@ describe("MCP security", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const target = await createPinnedMcpServerFetch("https://mcp.example.com/api");
-    await target.fetch(new URL("https://mcp.example.com/api"), { method: "POST" });
+    await target.fetch(new URL("https://mcp.example.com/api"), {
+      method: "POST",
+      redirect: "follow",
+    });
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [, init] = fetchMock.mock.calls[0] as [URL, RequestInit & { dispatcher?: unknown }];
