@@ -229,6 +229,19 @@ export function ensureSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_memory_archive_memory_id ON memory_archive(memory_id);
     CREATE INDEX IF NOT EXISTS idx_memory_archive_delete_after ON memory_archive(delete_after);
 
+    CREATE TABLE IF NOT EXISTS pending_remote_vector_deletions (
+      memory_id TEXT NOT NULL,
+      namespace TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts >= 0),
+      last_error TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      PRIMARY KEY (memory_id, namespace)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_pending_remote_vector_deletions_namespace_updated
+      ON pending_remote_vector_deletions(namespace, updated_at);
+
     CREATE TABLE IF NOT EXISTS memory_cleanup_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       mode TEXT NOT NULL CHECK(mode IN ('dry_run', 'archive', 'prune_archive')),
@@ -1091,7 +1104,7 @@ function repairAutonomousTaskChildForeignKeys(db: Database.Database): number {
   return tablesToRepair.length;
 }
 
-export const CURRENT_SCHEMA_VERSION = "1.37.0";
+export const CURRENT_SCHEMA_VERSION = "1.38.0";
 
 export function runMigrations(db: Database.Database): void {
   const currentVersion = getSchemaVersion(db);
@@ -2272,6 +2285,30 @@ export function runMigrations(db: Database.Database): void {
       );
     } catch (error) {
       log.error({ err: error }, "Migration 1.37.0 failed");
+      throw error;
+    }
+  }
+
+  if (!currentVersion || versionLessThan(currentVersion, "1.38.0")) {
+    log.info("Running migration 1.38.0: Add pending remote vector deletion queue");
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS pending_remote_vector_deletions (
+          memory_id TEXT NOT NULL,
+          namespace TEXT NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts >= 0),
+          last_error TEXT,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          PRIMARY KEY (memory_id, namespace)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_pending_remote_vector_deletions_namespace_updated
+          ON pending_remote_vector_deletions(namespace, updated_at);
+      `);
+      log.info("Migration 1.38.0 complete: pending remote vector deletion queue created");
+    } catch (error) {
+      log.error({ err: error }, "Migration 1.38.0 failed");
       throw error;
     }
   }

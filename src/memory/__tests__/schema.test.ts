@@ -214,6 +214,7 @@ describe("Memory Schema", () => {
       expect(tableNames).toContain("integrations");
       expect(tableNames).toContain("integration_credentials");
       expect(tableNames).toContain("integration_usage");
+      expect(tableNames).toContain("pending_remote_vector_deletions");
       expect(tableNames).toContain("journal");
       expect(tableNames).toContain("temporal_metadata");
       expect(tableNames).toContain("time_patterns");
@@ -1493,7 +1494,7 @@ describe("Memory Schema", () => {
     });
 
     it("CURRENT_SCHEMA_VERSION is set to expected value", () => {
-      expect(CURRENT_SCHEMA_VERSION).toBe("1.37.0");
+      expect(CURRENT_SCHEMA_VERSION).toBe("1.38.0");
     });
   });
 
@@ -1637,6 +1638,25 @@ describe("Memory Schema", () => {
 
       const store = getAutonomousTaskStore(db);
       expect(store.cleanOldCheckpoints(7)).toBe(1);
+    });
+
+    it("runMigrations from version 1.37.0 adds pending remote vector deletion queue", () => {
+      ensureSchema(db);
+      db.exec("DROP TABLE pending_remote_vector_deletions");
+      setSchemaVersion(db, "1.37.0");
+
+      runMigrations(db);
+
+      const table = db
+        .prepare(
+          `
+          SELECT name FROM sqlite_master
+          WHERE type='table' AND name='pending_remote_vector_deletions'
+        `
+        )
+        .get() as { name: string } | undefined;
+      expect(table).toBeDefined();
+      expect(getSchemaVersion(db)).toBe(CURRENT_SCHEMA_VERSION);
     });
   });
 
