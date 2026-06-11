@@ -59,4 +59,30 @@ describe("PluginRateLimiter", () => {
     // callback is unaffected
     expect(() => limiter.check("cats", "callback", 5)).not.toThrow();
   });
+
+  it("tracks users independently", () => {
+    for (let i = 0; i < 5; i++) {
+      limiter.check("cats", "inline", 5, 60_000, "userA");
+    }
+
+    expect(() => limiter.check("cats", "inline", 5, 60_000, "userA")).toThrow();
+    expect(() => limiter.check("cats", "inline", 5, 60_000, "userB")).not.toThrow();
+  });
+
+  it("prunes expired windows for inactive users during checks", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+
+    try {
+      limiter.check("cats", "inline", 5, 1000, "userA");
+      expect((limiter as unknown as { windows: Map<string, unknown> }).windows.size).toBe(1);
+
+      vi.advanceTimersByTime(1001);
+      limiter.check("dogs", "inline", 5, 1000, "userB");
+
+      expect((limiter as unknown as { windows: Map<string, unknown> }).windows.size).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

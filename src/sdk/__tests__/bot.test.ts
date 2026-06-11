@@ -166,7 +166,7 @@ describe("createBotSDK", () => {
       from: { id: 1, isBot: false },
     });
 
-    expect(limiter.check).toHaveBeenCalledWith("cats", "inline", 30);
+    expect(limiter.check).toHaveBeenCalledWith("cats", "inline", 30, 60_000, 1);
     expect(handler).toHaveBeenCalled();
   });
 
@@ -186,7 +186,7 @@ describe("createBotSDK", () => {
       editMessage: vi.fn(),
     });
 
-    expect(limiter.check).toHaveBeenCalledWith("cats", "callback", 60);
+    expect(limiter.check).toHaveBeenCalledWith("cats", "callback", 60, 60_000, 1);
   });
 
   it("uses custom rate limits from manifest", async () => {
@@ -208,7 +208,7 @@ describe("createBotSDK", () => {
       from: { id: 1, isBot: false },
     });
 
-    expect(limiter.check).toHaveBeenCalledWith("cats", "inline", 10);
+    expect(limiter.check).toHaveBeenCalledWith("cats", "inline", 10, 60_000, 1);
   });
 
   it("username returns empty when bot is null", () => {
