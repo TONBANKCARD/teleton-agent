@@ -65,7 +65,7 @@ export function createMcpRoutes(deps: WebUIServerDeps) {
         }
       }
       if (body.url) {
-        const urlError = validateMcpServerUrl(body.url);
+        const urlError = await validateMcpServerUrl(body.url);
         if (urlError) {
           return c.json({ success: false, error: urlError } as APIResponse<never>, 400);
         }

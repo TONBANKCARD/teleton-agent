@@ -4,6 +4,7 @@ import { ensureSchema } from "../schema.js";
 import { MemoryScorer } from "../scoring.js";
 import { MemoryRetentionService } from "../retention.js";
 import { MemoryGraphStore } from "../graph-store.js";
+import type { SemanticVectorStore } from "../vector-store.js";
 
 function createDb(): InstanceType<typeof Database> {
   const db = new Database(":memory:");
@@ -24,6 +25,23 @@ function insertKnowledge(
     VALUES (?, 'memory', ?, ?, ?, ?)
   `
   ).run(id, text, `hash-${id}`, createdAt, createdAt);
+}
+
+function createSemanticVectorStore(
+  deleteRemote: (ids: string[]) => Promise<void>
+): SemanticVectorStore {
+  return {
+    isConfigured: true,
+    namespace: "test-namespace",
+    healthCheck: vi.fn(async () => ({ mode: "online" })),
+    logStatus: vi.fn(async () => ({ mode: "online" })),
+    searchKnowledge: vi.fn(async () => []),
+    searchMessages: vi.fn(async () => []),
+    upsertKnowledge: vi.fn(async () => undefined),
+    upsertMessages: vi.fn(async () => undefined),
+    delete: deleteRemote,
+    deleteMessages: vi.fn(async () => undefined),
+  };
 }
 
 describe("memory prioritization", () => {
@@ -51,6 +69,7 @@ describe("memory prioritization", () => {
 
     expect(names).toContain("memory_scores");
     expect(names).toContain("memory_archive");
+    expect(names).toContain("pending_remote_vector_deletions");
     expect(names).toContain("memory_cleanup_history");
   });
 
@@ -138,5 +157,42 @@ describe("memory prioritization", () => {
     expect(
       db.prepare("SELECT memory_id FROM memory_archive WHERE memory_id = 'old-low'").get()
     ).toBeDefined();
+  });
+
+  it("persists and retries failed remote vector deletes after archive", async () => {
+    const old = Math.floor(Date.now() / 1000) - 120 * 24 * 60 * 60;
+    insertKnowledge(db, "remote-stale", "stale semantic memory", old);
+
+    const deleteRemote = vi
+      .fn<(ids: string[]) => Promise<void>>()
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValue(undefined);
+    const vectorStore = createSemanticVectorStore(deleteRemote);
+
+    const retention = new MemoryRetentionService(
+      db,
+      {
+        min_score: 0.95,
+        max_age_days: 90,
+        max_entries: 100,
+        archive_days: 14,
+      },
+      undefined,
+      vectorStore
+    );
+
+    const cleanup = await retention.cleanup({ dryRun: false });
+
+    expect(cleanup.archived).toBe(1);
+    expect(deleteRemote).toHaveBeenCalledWith(["remote-stale"]);
+    expect(retention.getPendingRemoteVectorDeletions().map((entry) => entry.memoryId)).toContain(
+      "remote-stale"
+    );
+
+    await retention.cleanup({ dryRun: false });
+
+    expect(deleteRemote).toHaveBeenCalledTimes(2);
+    expect(deleteRemote).toHaveBeenLastCalledWith(["remote-stale"]);
+    expect(retention.getPendingRemoteVectorDeletions()).toHaveLength(0);
   });
 });

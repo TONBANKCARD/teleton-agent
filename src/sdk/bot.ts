@@ -12,6 +12,8 @@ import { toTLMarkup, toGrammyKeyboard, prefixButtons } from "../bot/services/sty
 import { stripCustomEmoji, parseHtml } from "../bot/services/html-parser.js";
 import { compileGlob } from "../bot/inline-router.js";
 
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
 export function createBotSDK(
   router: InlineRouter | null,
   gramjsBot: GramJSBotClient | null,
@@ -55,7 +57,7 @@ export function createBotSDK(
       }
       handlers.onInlineQuery = async (ctx) => {
         if (rateLimiter) {
-          rateLimiter.check(pluginName, "inline", inlineLimit);
+          rateLimiter.check(pluginName, "inline", inlineLimit, RATE_LIMIT_WINDOW_MS, ctx.userId);
         }
         return handler(ctx);
       };
@@ -71,7 +73,13 @@ export function createBotSDK(
         regex: compileGlob(pattern),
         handler: async (ctx) => {
           if (rateLimiter) {
-            rateLimiter.check(pluginName, "callback", callbackLimit);
+            rateLimiter.check(
+              pluginName,
+              "callback",
+              callbackLimit,
+              RATE_LIMIT_WINDOW_MS,
+              ctx.userId
+            );
           }
           return handler(ctx);
         },

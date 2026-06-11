@@ -3,10 +3,16 @@ import { Hono } from "hono";
 import { createMcpRoutes } from "../routes/mcp.js";
 import type { WebUIServerDeps } from "../types.js";
 
+const dnsMocks = vi.hoisted(() => ({
+  lookup: vi.fn(),
+}));
+
 const configMocks = vi.hoisted(() => ({
   readRawConfig: vi.fn(),
   writeRawConfig: vi.fn(),
 }));
+
+vi.mock("node:dns/promises", () => dnsMocks);
 
 vi.mock("../../config/configurable-keys.js", () => ({
   readRawConfig: configMocks.readRawConfig,
@@ -39,6 +45,8 @@ describe("MCP routes", () => {
     app = createApp();
     configMocks.readRawConfig.mockReturnValue({ mcp: { servers: {} } });
     configMocks.writeRawConfig.mockClear();
+    dnsMocks.lookup.mockReset();
+    dnsMocks.lookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
   });
 
   it("rejects MCP server urls pointing at metadata addresses", async () => {
@@ -74,6 +82,21 @@ describe("MCP routes", () => {
 
     expect(res.status).toBe(400);
     expect(json.success).toBe(false);
+    expect(configMocks.writeRawConfig).not.toHaveBeenCalled();
+  });
+
+  it("rejects MCP server urls whose hostnames resolve to metadata addresses", async () => {
+    dnsMocks.lookup.mockResolvedValueOnce([{ address: "169.254.169.254", family: 4 }]);
+
+    const res = await postMcp(app, {
+      name: "rebind",
+      url: "https://rebind.example.com/mcp",
+    });
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.error).toMatch(/private|loopback|metadata|not allowed/i);
     expect(configMocks.writeRawConfig).not.toHaveBeenCalled();
   });
 

@@ -57,7 +57,7 @@ export async function mcpAddCommand(
 
   if (options.url) {
     // Treat pkg as a URL
-    const urlError = validateMcpServerUrl(pkg);
+    const urlError = await validateMcpServerUrl(pkg);
     if (urlError) {
       console.error(`❌ ${urlError}`);
       process.exit(1);
