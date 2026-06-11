@@ -53,6 +53,15 @@ export interface MemoryCleanupHistoryEntry {
   createdAt: number;
 }
 
+export interface PendingRemoteVectorDeletion {
+  memoryId: string;
+  namespace: string;
+  attempts: number;
+  lastError: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
 interface RetentionOptions {
   minScore: number;
   maxAgeDays: number;
@@ -91,6 +100,15 @@ interface CleanupHistoryRow {
   protected: number;
   reason: string | null;
   created_at: number;
+}
+
+interface PendingRemoteVectorDeletionRow {
+  memory_id: string;
+  namespace: string;
+  attempts: number;
+  last_error: string | null;
+  created_at: number;
+  updated_at: number;
 }
 
 const DEFAULT_RETENTION: RetentionOptions = {
@@ -134,6 +152,22 @@ function rowToHistory(row: CleanupHistoryRow): MemoryCleanupHistoryEntry {
     reason: row.reason,
     createdAt: row.created_at,
   };
+}
+
+function rowToPendingDeletion(row: PendingRemoteVectorDeletionRow): PendingRemoteVectorDeletion {
+  return {
+    memoryId: row.memory_id,
+    namespace: row.namespace,
+    attempts: row.attempts,
+    lastError: row.last_error,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
 
 export class MemoryRetentionService {
@@ -216,6 +250,9 @@ export class MemoryRetentionService {
       .filter((row): row is MemoryRetentionRow => !!row);
     const deleteAfter = now + this.options.archiveDays * SECONDS_PER_DAY;
     const hasKnowledgeVec = this.tableExists("knowledge_vec");
+    const remoteVectorNamespace = this.vectorStore?.isConfigured
+      ? this.vectorStore.namespace
+      : null;
 
     const archived = this.db.transaction(() => {
       const archive = this.db.prepare(
@@ -242,6 +279,21 @@ export class MemoryRetentionService {
       const deleteKnowledge = this.db.prepare(`DELETE FROM knowledge WHERE id = ?`);
       const deleteVector = hasKnowledgeVec
         ? this.db.prepare(`DELETE FROM knowledge_vec WHERE id = ?`)
+        : null;
+      const enqueueRemoteVectorDeletion = remoteVectorNamespace
+        ? this.db.prepare(
+            `
+            INSERT INTO pending_remote_vector_deletions (
+              memory_id,
+              namespace,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, unixepoch(), unixepoch())
+            ON CONFLICT(memory_id, namespace) DO UPDATE SET
+              updated_at = excluded.updated_at
+          `
+          )
         : null;
 
       let count = 0;
@@ -272,6 +324,9 @@ export class MemoryRetentionService {
           now,
           deleteAfter
         );
+        if (enqueueRemoteVectorDeletion && remoteVectorNamespace) {
+          enqueueRemoteVectorDeletion.run(row.id, remoteVectorNamespace);
+        }
         deleteVector?.run(row.id);
         deleteKnowledge.run(row.id);
         count++;
@@ -279,13 +334,7 @@ export class MemoryRetentionService {
       return count;
     })();
 
-    if (archived > 0 && this.vectorStore?.isConfigured) {
-      try {
-        await this.vectorStore.delete(ids);
-      } catch (error) {
-        log.warn({ err: error }, "Semantic vector cleanup failed after memory archive");
-      }
-    }
+    await this.retryPendingRemoteVectorDeletions();
 
     const deleted = this.pruneExpiredArchive(now);
     this.recordHistory({
@@ -379,6 +428,56 @@ export class MemoryRetentionService {
     return rows.map(rowToHistory);
   }
 
+  getPendingRemoteVectorDeletions(limit = 100): PendingRemoteVectorDeletion[] {
+    const safeLimit = Math.max(1, Math.min(1000, Math.floor(limit)));
+    const rows = this.db
+      .prepare(
+        `
+        SELECT *
+        FROM pending_remote_vector_deletions
+        ORDER BY updated_at ASC, memory_id ASC
+        LIMIT ?
+      `
+      )
+      .all(safeLimit) as PendingRemoteVectorDeletionRow[];
+    return rows.map(rowToPendingDeletion);
+  }
+
+  async retryPendingRemoteVectorDeletions(limit = 1000): Promise<number> {
+    if (!this.vectorStore?.isConfigured) return 0;
+
+    const safeLimit = Math.max(1, Math.min(1000, Math.floor(limit)));
+    const namespace = this.vectorStore.namespace;
+    const rows = this.db
+      .prepare(
+        `
+        SELECT *
+        FROM pending_remote_vector_deletions
+        WHERE namespace = ?
+        ORDER BY updated_at ASC, memory_id ASC
+        LIMIT ?
+      `
+      )
+      .all(namespace, safeLimit) as PendingRemoteVectorDeletionRow[];
+
+    if (rows.length === 0) return 0;
+
+    const ids = rows.map((row) => row.memory_id);
+    try {
+      await this.vectorStore.delete(ids);
+    } catch (error) {
+      this.markRemoteVectorDeleteFailed(namespace, ids, errorMessage(error));
+      log.warn(
+        { err: error, namespace, pending: ids.length },
+        "Semantic vector cleanup failed; queued for retry"
+      );
+      return 0;
+    }
+
+    this.clearPendingRemoteVectorDeletions(namespace, ids);
+    return ids.length;
+  }
+
   pruneExpiredArchive(now = Math.floor(Date.now() / 1000)): number {
     const result = this.db.prepare(`DELETE FROM memory_archive WHERE delete_after <= ?`).run(now);
     const deleted = result.changes;
@@ -462,6 +561,39 @@ export class MemoryRetentionService {
       .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`)
       .get(name) as { name: string } | undefined;
     return !!row;
+  }
+
+  private markRemoteVectorDeleteFailed(namespace: string, ids: string[], message: string): void {
+    const update = this.db.prepare(
+      `
+      UPDATE pending_remote_vector_deletions
+      SET attempts = attempts + 1,
+          last_error = ?,
+          updated_at = unixepoch()
+      WHERE namespace = ? AND memory_id = ?
+    `
+    );
+    const markFailed = this.db.transaction((memoryIds: string[]) => {
+      for (const id of memoryIds) {
+        update.run(message, namespace, id);
+      }
+    });
+    markFailed(ids);
+  }
+
+  private clearPendingRemoteVectorDeletions(namespace: string, ids: string[]): void {
+    const remove = this.db.prepare(
+      `
+      DELETE FROM pending_remote_vector_deletions
+      WHERE namespace = ? AND memory_id = ?
+    `
+    );
+    const clear = this.db.transaction((memoryIds: string[]) => {
+      for (const id of memoryIds) {
+        remove.run(namespace, id);
+      }
+    });
+    clear(ids);
   }
 
   private recordHistory(input: {
