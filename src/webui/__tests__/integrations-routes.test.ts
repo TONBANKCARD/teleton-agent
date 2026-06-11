@@ -13,11 +13,21 @@ vi.mock("../../utils/logger.js", () => ({
   })),
 }));
 
-function createApp(db: Database.Database): Hono {
+function createApp(db: Database.Database, credentialKey?: string): Hono {
   const deps = {
     memory: { db },
     bridge: { isAvailable: () => true },
     mcpServers: () => [],
+    marketplace: credentialKey
+      ? {
+          config: {
+            integrations: {
+              credential_key: credentialKey,
+              global_rate_limit: {},
+            },
+          },
+        }
+      : undefined,
   } as unknown as WebUIServerDeps;
 
   const app = new Hono();
@@ -71,6 +81,8 @@ describe("Integrations routes", () => {
   });
 
   it("creates masked credentials without leaking the plaintext value", async () => {
+    app = createApp(db, "route-test-master-key");
+
     await app.request("/api/integrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,6 +112,36 @@ describe("Integrations routes", () => {
       credentials_encrypted: string;
     };
     expect(raw.credentials_encrypted).not.toContain("ghp_plaintext_secret");
+  });
+
+  it("refuses to create credentials when no encryption key is configured", async () => {
+    await app.request("/api/integrations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: "github-main",
+        name: "GitHub Main",
+        type: "api",
+        provider: "github",
+        config: { baseUrl: "https://api.github.com" },
+      }),
+    });
+
+    const credentialRes = await app.request("/api/integrations/github-main/credentials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        authType: "api_key",
+        credentials: { apiKey: "ghp_plaintext_secret", headerName: "Authorization" },
+      }),
+    });
+
+    expect(credentialRes.status).toBe(500);
+    const body = await credentialRes.json();
+    expect(body.error).toMatch(/TELETON_INTEGRATIONS_KEY|integrations\.credential_key/i);
+
+    const row = db.prepare("SELECT id FROM integration_credentials").get();
+    expect(row).toBeUndefined();
   });
 
   it("validates unsupported integration types", async () => {

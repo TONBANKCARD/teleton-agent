@@ -624,8 +624,8 @@ const _IntegrationsObject = z.object({
     .string()
     .optional()
     .describe(
-      "Optional key material for encrypting integration credentials. " +
-        "If omitted, Teleton generates a local key in the security settings table."
+      "Key material for encrypting integration credentials. Required before credentials can " +
+        "be stored or read; may also be supplied via TELETON_INTEGRATIONS_KEY."
     ),
   health_check_interval_minutes: z
     .number()
