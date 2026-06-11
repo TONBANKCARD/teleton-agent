@@ -9,6 +9,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { Ajv, type ErrorObject } from "ajv";
 import { TOOL_EXECUTION_TIMEOUT_MS } from "../../constants/timeouts.js";
 import { sanitizeForContext } from "../../utils/sanitize.js";
@@ -17,7 +18,7 @@ import type { ToolRegistry } from "./registry.js";
 import type { McpConfig, McpServerConfig } from "../../config/schema.js";
 import { getErrorMessage } from "../../utils/errors.js";
 import { createLogger } from "../../utils/logger.js";
-import { BLOCKED_MCP_ENV_KEYS, validateMcpServerUrl } from "../../config/mcp-security.js";
+import { BLOCKED_MCP_ENV_KEYS, createPinnedMcpServerFetch } from "../../config/mcp-security.js";
 
 /**
  * Built-in tool name prefixes that MCP tools must not shadow.
@@ -117,11 +118,7 @@ export async function loadMcpServers(config: McpConfig): Promise<McpConnection[]
           stderr: "pipe",
         });
       } else if (serverConfig.url) {
-        const urlError = validateMcpServerUrl(serverConfig.url);
-        if (urlError) {
-          throw new Error(`MCP server "${name}": ${urlError}`);
-        }
-        transport = new StreamableHTTPClientTransport(new URL(serverConfig.url));
+        transport = await createStreamableHttpTransport(serverConfig.url);
       } else {
         throw new Error(`MCP server "${name}": needs 'command' or 'url'`);
       }
@@ -146,7 +143,7 @@ export async function loadMcpServers(config: McpConfig): Promise<McpConnection[]
         if (serverConfig.url && transport instanceof StreamableHTTPClientTransport) {
           await client.close().catch(() => {});
           log.info({ server: name }, "Streamable HTTP failed, falling back to SSE");
-          transport = new SSEClientTransport(new URL(serverConfig.url));
+          transport = await createSseTransport(serverConfig.url);
           const fallbackClient = new Client({ name: `teleton-${name}`, version: "1.0.0" });
           await Promise.race([
             fallbackClient.connect(transport),
@@ -189,6 +186,44 @@ export async function loadMcpServers(config: McpConfig): Promise<McpConnection[]
   }
 
   return connections;
+}
+
+async function createStreamableHttpTransport(
+  rawUrl: string
+): Promise<StreamableHTTPClientTransport> {
+  const target = await createPinnedMcpServerFetch(rawUrl);
+  return withPinnedFetchCleanup(
+    new StreamableHTTPClientTransport(target.url, { fetch: target.fetch }),
+    target.close
+  );
+}
+
+async function createSseTransport(rawUrl: string): Promise<SSEClientTransport> {
+  const target = await createPinnedMcpServerFetch(rawUrl);
+  return withPinnedFetchCleanup(
+    new SSEClientTransport(target.url, { fetch: target.fetch }),
+    target.close
+  );
+}
+
+function withPinnedFetchCleanup<TTransport extends Transport>(
+  transport: TTransport,
+  cleanup: () => Promise<void>
+): TTransport {
+  const closeTransport = transport.close.bind(transport);
+  let closed = false;
+
+  transport.close = async () => {
+    if (closed) return;
+    closed = true;
+    try {
+      await closeTransport();
+    } finally {
+      await cleanup();
+    }
+  };
+
+  return transport;
 }
 
 /**

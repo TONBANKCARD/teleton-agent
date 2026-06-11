@@ -16,6 +16,11 @@ export interface ResolvedOutboundUrl {
   addresses: LookupAddress[];
 }
 
+export interface PinnedOutboundFetch extends ResolvedOutboundUrl {
+  fetch: typeof fetch;
+  close: () => Promise<void>;
+}
+
 export interface OutboundFetchResponse {
   ok: boolean;
   status: number;
@@ -142,6 +147,34 @@ export async function fetchValidatedOutboundUrl(
   }
 }
 
+export async function createPinnedOutboundFetch(
+  raw: string,
+  options: OutboundUrlGuardOptions
+): Promise<PinnedOutboundFetch> {
+  const target = await resolveOutboundUrl(raw, options);
+  const dispatcher = createPinnedDispatcher(target, options.label);
+  let closed = false;
+
+  return {
+    ...target,
+    fetch: async (input, init) => {
+      assertPinnedFetchTarget(input, target, options.label);
+      if (closed) throw new Error(`${options.label} pinned fetch is already closed`);
+
+      return fetch(input, {
+        ...init,
+        redirect: init?.redirect ?? "manual",
+        dispatcher,
+      } as FetchInitWithDispatcher);
+    },
+    close: async () => {
+      if (closed) return;
+      closed = true;
+      await dispatcher.close();
+    },
+  };
+}
+
 function normalizeHostname(hostname: string): string {
   return hostname
     .trim()
@@ -257,4 +290,22 @@ function selectPinnedAddresses(
     return addresses.filter((address) => address.family === family);
   }
   return addresses;
+}
+
+function assertPinnedFetchTarget(
+  input: RequestInfo | URL,
+  target: ResolvedOutboundUrl,
+  label: string
+): void {
+  const rawUrl = input instanceof Request ? input.url : input instanceof URL ? input.href : input;
+  let requestedUrl: URL;
+  try {
+    requestedUrl = new URL(rawUrl);
+  } catch {
+    throw new Error(`${label} attempted fetch to a non-absolute URL: ${rawUrl}`);
+  }
+
+  if (requestedUrl.origin !== target.url.origin) {
+    throw new Error(`${label} attempted fetch to unvalidated origin: ${requestedUrl.origin}`);
+  }
 }
