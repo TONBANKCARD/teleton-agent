@@ -105,9 +105,21 @@ const CONDITION_KEYS = new Set([
   "lt",
   "lte",
 ]);
+const MAX_PARAM_PATTERN_LENGTH = 256;
+const MAX_PARAM_PATTERN_INPUT_LENGTH = 4096;
+
+type ParamPatternCache = Map<string, RegExp>;
+
+class UnsafePolicyPatternError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnsafePolicyPatternError";
+  }
+}
 
 export class PolicyEngine {
   private db: Database;
+  private readonly paramPatternCache: ParamPatternCache = new Map();
 
   constructor(db: Database) {
     this.db = db;
@@ -181,7 +193,7 @@ export class PolicyEngine {
   }
 
   createPolicy(input: CreateSecurityPolicyInput): SecurityPolicy {
-    const normalized = normalizeCreatePolicy(input);
+    const normalized = normalizeCreatePolicy(input, this.paramPatternCache);
     const result = this.db
       .prepare(
         `INSERT INTO security_policies (name, match, action, reason, enabled, priority)
@@ -204,14 +216,17 @@ export class PolicyEngine {
     const existing = this.getPolicy(id);
     if (!existing) return null;
 
-    const next: CreateSecurityPolicyInput = normalizeCreatePolicy({
-      name: input.name ?? existing.name,
-      match: input.match ?? existing.match,
-      action: input.action ?? existing.action,
-      reason: input.reason === undefined ? (existing.reason ?? undefined) : (input.reason ?? ""),
-      enabled: input.enabled ?? existing.enabled,
-      priority: input.priority ?? existing.priority,
-    });
+    const next: CreateSecurityPolicyInput = normalizeCreatePolicy(
+      {
+        name: input.name ?? existing.name,
+        match: input.match ?? existing.match,
+        action: input.action ?? existing.action,
+        reason: input.reason === undefined ? (existing.reason ?? undefined) : (input.reason ?? ""),
+        enabled: input.enabled ?? existing.enabled,
+        priority: input.priority ?? existing.priority,
+      },
+      this.paramPatternCache
+    );
 
     this.db
       .prepare(
@@ -254,7 +269,18 @@ export class PolicyEngine {
 
     for (const row of rows) {
       const policy = this.rowToPolicy(row);
-      if (!matchesPolicy(policy, input)) continue;
+      try {
+        if (!matchesPolicy(policy, input, this.paramPatternCache)) continue;
+      } catch (error) {
+        if (error instanceof UnsafePolicyPatternError) {
+          return {
+            action: "deny",
+            reason: error.message,
+            policy,
+          };
+        }
+        throw error;
+      }
 
       return {
         action: policy.action,
@@ -415,7 +441,10 @@ export function stringifyPolicyYaml(policy: CreateSecurityPolicyInput | Security
   return stringify(serializable);
 }
 
-function normalizeCreatePolicy(input: CreateSecurityPolicyInput): CreateSecurityPolicyInput {
+function normalizeCreatePolicy(
+  input: CreateSecurityPolicyInput,
+  paramPatternCache?: ParamPatternCache
+): CreateSecurityPolicyInput {
   if (!input.name || typeof input.name !== "string") {
     throw new Error("Policy name is required");
   }
@@ -428,6 +457,7 @@ function normalizeCreatePolicy(input: CreateSecurityPolicyInput): CreateSecurity
   if (input.priority !== undefined && !Number.isInteger(input.priority)) {
     throw new Error(`Policy "${input.name}" priority must be an integer`);
   }
+  validatePolicyMatch(input.name, input.match, paramPatternCache);
   return {
     name: input.name,
     match: input.match,
@@ -438,7 +468,30 @@ function normalizeCreatePolicy(input: CreateSecurityPolicyInput): CreateSecurity
   };
 }
 
-function matchesPolicy(policy: SecurityPolicy, input: PolicyEvaluationInput): boolean {
+function validatePolicyMatch(
+  policyName: string,
+  match: PolicyMatch,
+  paramPatternCache?: ParamPatternCache
+): void {
+  if (match.params === undefined) return;
+  if (!isRecord(match.params)) {
+    throw new Error(`Policy "${policyName}" match.params must be an object`);
+  }
+  for (const [key, matcher] of Object.entries(match.params)) {
+    if (!isCondition(matcher) || matcher.pattern === undefined) continue;
+    getCompiledParamPattern(matcher.pattern, {
+      paramKey: key,
+      policyName,
+      paramPatternCache,
+    });
+  }
+}
+
+function matchesPolicy(
+  policy: SecurityPolicy,
+  input: PolicyEvaluationInput,
+  paramPatternCache: ParamPatternCache
+): boolean {
   const match = policy.match;
   if (match.tool !== undefined && !matchesName(input.tool, match.tool)) return false;
   if (match.module !== undefined && !matchesName(input.module ?? "", match.module)) return false;
@@ -447,7 +500,15 @@ function matchesPolicy(policy: SecurityPolicy, input: PolicyEvaluationInput): bo
     if (!isRecord(input.params)) return false;
     for (const [key, matcher] of Object.entries(match.params)) {
       const value = getPath(input.params, key);
-      if (!matchesParam(value, matcher)) return false;
+      if (
+        !matchesParam(value, matcher, {
+          paramKey: key,
+          policyName: policy.name,
+          paramPatternCache,
+        })
+      ) {
+        return false;
+      }
     }
   }
 
@@ -468,11 +529,25 @@ function matchesName(value: string, matcher: string | string[]): boolean {
   });
 }
 
-function matchesParam(value: unknown, matcher: PolicyParamMatcher): boolean {
+function matchesParam(
+  value: unknown,
+  matcher: PolicyParamMatcher,
+  context: {
+    paramKey: string;
+    policyName: string;
+    paramPatternCache: ParamPatternCache;
+  }
+): boolean {
   if (isCondition(matcher)) {
     if (matcher.pattern !== undefined) {
+      const pattern = getCompiledParamPattern(matcher.pattern, context);
       if (typeof value !== "string") return false;
-      if (!new RegExp(matcher.pattern).test(value)) return false;
+      if (value.length > MAX_PARAM_PATTERN_INPUT_LENGTH) {
+        throw new UnsafePolicyPatternError(
+          `Policy "${context.policyName}" regex input for param "${context.paramKey}" exceeds ${MAX_PARAM_PATTERN_INPUT_LENGTH} characters`
+        );
+      }
+      if (!pattern.test(value)) return false;
     }
     if (matcher.in !== undefined && !matcher.in.some((entry) => deepEqual(entry, value))) {
       return false;
@@ -496,6 +571,156 @@ function matchesParam(value: unknown, matcher: PolicyParamMatcher): boolean {
   }
 
   return deepEqual(matcher, value);
+}
+
+function getCompiledParamPattern(
+  pattern: unknown,
+  context: {
+    paramKey: string;
+    policyName: string;
+    paramPatternCache?: ParamPatternCache;
+  }
+): RegExp {
+  const label = `Policy "${context.policyName}" param "${context.paramKey}"`;
+  if (typeof pattern !== "string") {
+    throw new UnsafePolicyPatternError(`${label} regex pattern must be a string`);
+  }
+
+  const cached = context.paramPatternCache?.get(pattern);
+  if (cached) return cached;
+
+  validateRegexPatternSource(pattern, label);
+
+  let compiled: RegExp;
+  try {
+    compiled = new RegExp(pattern);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new UnsafePolicyPatternError(`${label} has invalid regex pattern: ${reason}`);
+  }
+
+  context.paramPatternCache?.set(pattern, compiled);
+  return compiled;
+}
+
+function validateRegexPatternSource(pattern: string, label: string): void {
+  if (pattern.length > MAX_PARAM_PATTERN_LENGTH) {
+    throw new UnsafePolicyPatternError(
+      `${label} has unsafe regex pattern: pattern length exceeds ${MAX_PARAM_PATTERN_LENGTH} characters`
+    );
+  }
+
+  const unsafeReason = findUnsafeRegexPatternReason(pattern);
+  if (unsafeReason) {
+    throw new UnsafePolicyPatternError(`${label} has unsafe regex pattern: ${unsafeReason}`);
+  }
+}
+
+function findUnsafeRegexPatternReason(pattern: string): string | null {
+  const stack: Array<{ hasAlternation: boolean; hasQuantifiedToken: boolean }> = [];
+  let inCharacterClass = false;
+
+  for (let index = 0; index < pattern.length; index += 1) {
+    const char = pattern[index];
+
+    if (inCharacterClass) {
+      if (char === "\\") {
+        index += 1;
+        continue;
+      }
+      if (char === "]") inCharacterClass = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      const next = pattern[index + 1];
+      if (next && /[1-9]/.test(next)) {
+        return "backreferences are not allowed";
+      }
+      if (next === "k" && pattern[index + 2] === "<") {
+        return "named backreferences are not allowed";
+      }
+      index += 1;
+      continue;
+    }
+
+    if (char === "[") {
+      inCharacterClass = true;
+      continue;
+    }
+
+    if (char === "(") {
+      if (pattern[index + 1] === "?") {
+        if (pattern[index + 2] !== ":") {
+          return "lookaround, named captures, and inline option groups are not allowed";
+        }
+        index += 2;
+      }
+      stack.push({ hasAlternation: false, hasQuantifiedToken: false });
+      continue;
+    }
+
+    if (char === ")") {
+      const frame = stack.pop();
+      if (!frame) return null;
+
+      const quantifier = readRegexQuantifier(pattern, index + 1);
+      if (quantifier) {
+        if (frame.hasAlternation || frame.hasQuantifiedToken) {
+          return "nested or ambiguous quantified groups are not allowed";
+        }
+        markQuantifiedToken(stack);
+        index = quantifier.endIndex - 1;
+        continue;
+      }
+
+      const parent = stack[stack.length - 1];
+      if (parent) {
+        parent.hasAlternation ||= frame.hasAlternation;
+        parent.hasQuantifiedToken ||= frame.hasQuantifiedToken;
+      }
+      continue;
+    }
+
+    if (char === "|") {
+      const frame = stack[stack.length - 1];
+      if (frame) frame.hasAlternation = true;
+      continue;
+    }
+
+    const quantifier = readRegexQuantifier(pattern, index);
+    if (quantifier) {
+      markQuantifiedToken(stack);
+      index = quantifier.endIndex - 1;
+    }
+  }
+
+  return null;
+}
+
+function markQuantifiedToken(
+  stack: Array<{ hasAlternation: boolean; hasQuantifiedToken: boolean }>
+): void {
+  const frame = stack[stack.length - 1];
+  if (frame) frame.hasQuantifiedToken = true;
+}
+
+function readRegexQuantifier(pattern: string, startIndex: number): { endIndex: number } | null {
+  const char = pattern[startIndex];
+  let endIndex: number;
+
+  if (char === "*" || char === "+" || char === "?") {
+    endIndex = startIndex + 1;
+  } else if (char === "{") {
+    const match = /^\{\d+(?:,\d*)?\}/.exec(pattern.slice(startIndex));
+    if (!match) return null;
+    endIndex = startIndex + match[0].length;
+  } else {
+    return null;
+  }
+
+  if (pattern[endIndex] === "?") endIndex += 1;
+  return { endIndex };
 }
 
 function isCondition(value: unknown): value is PolicyParamCondition {

@@ -92,6 +92,76 @@ policies:
     expect(yaml).toContain("require_approval");
   });
 
+  it("rejects invalid or unsafe regex param patterns when defining policies", () => {
+    expect(() =>
+      engine.createPolicy({
+        name: "invalid-regex",
+        match: { tool: "web_fetch", params: { url: { pattern: "(" } } },
+        action: "deny",
+      })
+    ).toThrow(/regex pattern/i);
+
+    expect(() =>
+      engine.createPolicy({
+        name: "unsafe-regex",
+        match: { tool: "exec_run", params: { command: { pattern: "(a+)+$" } } },
+        action: "deny",
+      })
+    ).toThrow(/unsafe regex pattern/i);
+  });
+
+  it("fails closed instead of evaluating unsafe regex patterns from stored policies", () => {
+    db.prepare(
+      `INSERT INTO security_policies (name, match, action, reason, enabled, priority)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(
+      "legacy-unsafe-regex",
+      JSON.stringify({
+        tool: "exec_run",
+        params: { command: { pattern: "(a+)+$" } },
+      }),
+      "deny",
+      null,
+      1,
+      10
+    );
+
+    const result = engine.evaluate({
+      tool: "exec_run",
+      params: { command: "aaaaaaaaaaaa!" },
+      senderId: 123,
+      chatId: "dm",
+    });
+
+    expect(result.action).toBe("deny");
+    expect(result.reason).toMatch(/unsafe regex pattern/i);
+    expect(result.policy?.name).toBe("legacy-unsafe-regex");
+  });
+
+  it("reuses compiled regex param patterns during evaluation", () => {
+    engine.createPolicy({
+      name: "block-rm-rf",
+      match: { tool: "exec_run", params: { command: { pattern: "rm\\s+-rf" } } },
+      action: "deny",
+    });
+
+    const OriginalRegExp = globalThis.RegExp;
+    globalThis.RegExp = function RegExp() {
+      throw new Error("RegExp should not be recompiled during evaluation");
+    } as unknown as RegExpConstructor;
+    try {
+      const result = engine.evaluate({
+        tool: "exec_run",
+        params: { command: "rm -rf /tmp/example" },
+        senderId: 123,
+        chatId: "dm",
+      });
+      expect(result.action).toBe("deny");
+    } finally {
+      globalThis.RegExp = OriginalRegExp;
+    }
+  });
+
   it("records validation decisions", () => {
     engine.createPolicy({
       name: "block-write",
