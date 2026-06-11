@@ -7,7 +7,7 @@
 
 import { createHash } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, join } from "path";
+import { dirname, isAbsolute, join, relative, resolve, win32 } from "path";
 import { CURRENT_SCHEMA_VERSION } from "../memory/schema.js";
 import { createLogger } from "../utils/logger.js";
 import { TELETON_ROOT } from "../workspace/paths.js";
@@ -31,6 +31,32 @@ export interface RestoreOptions {
 
 function sha256(data: Buffer): string {
   return createHash("sha256").update(data).digest("hex");
+}
+
+function validateBackupPath(path: string): void {
+  const normalized = path.replace(/\\/g, "/");
+  if (
+    normalized.length === 0 ||
+    isAbsolute(path) ||
+    path.startsWith("/") ||
+    win32.isAbsolute(path) ||
+    normalized.split("/").some((segment) => segment === "..")
+  ) {
+    throw new Error(`Invalid backup path: ${path}`);
+  }
+}
+
+function resolveRestorePath(root: string, path: string): string {
+  validateBackupPath(path);
+
+  const rootAbs = resolve(root);
+  const destAbs = resolve(rootAbs, path);
+  const rel = relative(rootAbs, destAbs);
+  if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error(`Invalid backup path outside restore root: ${path}`);
+  }
+
+  return destAbs;
 }
 
 /** Compare dot-separated numeric versions. Returns -1 / 0 / 1. */
@@ -58,6 +84,7 @@ export function inspectBackup(archivePath: string): {
 
   const entries = new Map<string, Buffer>();
   for (const entry of parseTarGz(readFileSync(archivePath))) {
+    validateBackupPath(entry.name);
     entries.set(entry.name, entry.data);
   }
 
@@ -69,6 +96,7 @@ export function inspectBackup(archivePath: string): {
 
   // Verify every recorded file is present and intact.
   for (const file of manifest.files) {
+    validateBackupPath(file.path);
     const data = entries.get(file.path);
     if (!data) {
       throw new Error(`Corrupt backup: file listed in manifest is missing: ${file.path}`);
@@ -117,7 +145,7 @@ export function restoreBackup(options: RestoreOptions): RestoreResult {
   for (const file of manifest.files) {
     const data = entries.get(file.path);
     if (!data) continue; // already validated in inspectBackup
-    const destAbs = join(root, file.path);
+    const destAbs = resolveRestorePath(root, file.path);
     const destDir = dirname(destAbs);
     if (!existsSync(destDir)) {
       mkdirSync(destDir, { recursive: true });

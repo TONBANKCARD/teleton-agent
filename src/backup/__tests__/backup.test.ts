@@ -1,4 +1,5 @@
 import Database from "better-sqlite3";
+import { createHash } from "crypto";
 import {
   existsSync,
   mkdirSync,
@@ -9,7 +10,7 @@ import {
   writeFileSync,
 } from "fs";
 import { tmpdir } from "os";
-import { join } from "path";
+import { basename, join } from "path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTarGz, parseTarGz } from "../archive.js";
 import { createBackup } from "../backup.js";
@@ -19,6 +20,26 @@ import { resolveBackupTargets } from "../targets.js";
 
 let root: string;
 const created: string[] = [];
+
+function sha256(data: Buffer): string {
+  return createHash("sha256").update(data).digest("hex");
+}
+
+function buildArchiveWithEntry(path: string, data: Buffer): Buffer {
+  const manifest = {
+    format_version: 1,
+    created_at: new Date(0).toISOString(),
+    app_version: "0.0.0-test",
+    schema_version: null,
+    pre_upgrade: false,
+    files: [{ path, sha256: sha256(data), size: data.length, kind: "file" }],
+  };
+
+  return createTarGz([
+    { name: "manifest.json", data: Buffer.from(JSON.stringify(manifest), "utf-8") },
+    { name: path, data, mode: 0o600 },
+  ]);
+}
 
 /** Build a small, realistic TELETON_ROOT with a SQLite DB + plain files. */
 function seedDataDir(dir: string, schemaVersion = "1.0.0"): void {
@@ -196,6 +217,36 @@ describe("integrity & compatibility guards", () => {
 
   it("throws a clear error when the archive is missing", () => {
     expect(() => inspectBackup(join(root, "does-not-exist.tar.gz"))).toThrow(/not found/i);
+  });
+
+  it("rejects a backup entry that escapes the target root", () => {
+    const archivePath = join(root, "evil.tar.gz");
+    const escapeName = `${basename(root)}-escape.txt`;
+    const escapedPath = join(root, "..", escapeName);
+    writeFileSync(archivePath, buildArchiveWithEntry(`../${escapeName}`, Buffer.from("owned")));
+
+    try {
+      expect(() => inspectBackup(archivePath)).toThrow(/invalid backup path|traversal|outside/i);
+      expect(() => restoreBackup({ archivePath, root, skipSafetyBackup: true })).toThrow(
+        /invalid backup path|traversal|outside/i
+      );
+      expect(existsSync(escapedPath)).toBe(false);
+    } finally {
+      rmSync(escapedPath, { force: true });
+    }
+  });
+
+  it("rejects a backup entry with an absolute path", () => {
+    const archivePath = join(root, "absolute.tar.gz");
+    writeFileSync(
+      archivePath,
+      buildArchiveWithEntry("/tmp/teleton-absolute-restore.txt", Buffer.from("owned"))
+    );
+
+    expect(() => inspectBackup(archivePath)).toThrow(/invalid backup path|absolute|outside/i);
+    expect(() => restoreBackup({ archivePath, root, skipSafetyBackup: true })).toThrow(
+      /invalid backup path|absolute|outside/i
+    );
   });
 });
 
