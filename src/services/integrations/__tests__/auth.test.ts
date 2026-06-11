@@ -52,6 +52,39 @@ describe("IntegrationAuthManager — WORK4-003 regression", () => {
     expect(row).toBeUndefined();
   });
 
+  it("refuses to create credentials when no encryption key is configured", () => {
+    const manager = new IntegrationAuthManager(db);
+
+    expect(() =>
+      manager.createCredential({
+        integrationId: "svc",
+        authType: "api_key",
+        credentials: { apiKey: "shared-secret" },
+      })
+    ).toThrow(/TELETON_INTEGRATIONS_KEY|integrations\.credential_key/i);
+
+    const row = db.prepare("SELECT id FROM integration_credentials").get();
+    expect(row).toBeUndefined();
+  });
+
+  it("refuses to read stored credentials when no encryption key is configured", () => {
+    const writer = new IntegrationAuthManager(db, "a".repeat(64));
+    const credential = writer.createCredential({
+      integrationId: "svc",
+      authType: "api_key",
+      credentials: { apiKey: "shared-secret" },
+    });
+
+    const reader = new IntegrationAuthManager(db);
+
+    expect(() => reader.getCredential(credential.id)).toThrow(
+      /TELETON_INTEGRATIONS_KEY|integrations\.credential_key/i
+    );
+    expect(() => reader.listCredentials("svc")).toThrow(
+      /TELETON_INTEGRATIONS_KEY|integrations\.credential_key/i
+    );
+  });
+
   it("encrypts and decrypts credentials using an explicit key", () => {
     const key = "a".repeat(64);
     const manager = new IntegrationAuthManager(db, key);
@@ -80,19 +113,5 @@ describe("IntegrationAuthManager — WORK4-003 regression", () => {
     const retrieved = manager.getCredential(cred.id);
     expect(retrieved).not.toBeNull();
     expect(retrieved!.credentials.apiKey).toBe("env-secret");
-  });
-
-  it("two managers without explicit key share the same fallback key and can decrypt each other's data", () => {
-    const mgr1 = new IntegrationAuthManager(db);
-    const cred = mgr1.createCredential({
-      integrationId: "svc",
-      authType: "api_key",
-      credentials: { apiKey: "shared-secret" },
-    });
-
-    const mgr2 = new IntegrationAuthManager(db);
-    const retrieved = mgr2.getCredential(cred.id);
-    expect(retrieved).not.toBeNull();
-    expect(retrieved!.credentials.apiKey).toBe("shared-secret");
   });
 });

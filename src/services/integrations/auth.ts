@@ -58,6 +58,10 @@ const SECRET_KEYS = new Set([
   "value",
 ]);
 
+const MISSING_CREDENTIAL_KEY_ERROR =
+  "Integration credential encryption key is required. Set TELETON_INTEGRATIONS_KEY " +
+  "or integrations.credential_key before storing or reading integration credentials.";
+
 function nowSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
@@ -71,8 +75,7 @@ function deriveKey(material: string): Buffer {
 
 function warnNoKey(): void {
   log.warn(
-    "TELETON_INTEGRATIONS_KEY is not set. Integration credentials are NOT encrypted at rest. " +
-      "Set TELETON_INTEGRATIONS_KEY to a 64-character hex string to enable encryption."
+    `${MISSING_CREDENTIAL_KEY_ERROR} Credential storage and reads are disabled until a key is configured.`
   );
 }
 
@@ -135,19 +138,27 @@ function maskCredentials(credentials: Record<string, unknown>): Record<string, u
 
 export class IntegrationAuthManager {
   private readonly db: Database.Database;
-  private readonly key: Buffer;
+  private readonly key: Buffer | null;
 
   constructor(db: Database.Database, keyMaterial?: string) {
     ensureIntegrationTables(db);
     this.db = db;
     const material = keyMaterial || process.env.TELETON_INTEGRATIONS_KEY || "";
-    if (!material) {
+    this.key = material ? deriveKey(material) : null;
+    if (!this.key) {
       warnNoKey();
     }
-    this.key = deriveKey(material || "default-insecure-key-set-TELETON_INTEGRATIONS_KEY");
+  }
+
+  private requireKey(): Buffer {
+    if (!this.key) {
+      throw new Error(MISSING_CREDENTIAL_KEY_ERROR);
+    }
+    return this.key;
   }
 
   createCredential(input: CreateCredentialInput): IntegrationCredential {
+    const key = this.requireKey();
     if (!isIntegrationAuthType(input.authType)) {
       throw new Error(`Unsupported auth type: ${String(input.authType)}`);
     }
@@ -163,7 +174,7 @@ export class IntegrationAuthManager {
         id,
         input.integrationId,
         input.authType,
-        encryptJson(input.credentials, this.key),
+        encryptJson(input.credentials, key),
         input.expiresAt ?? null,
         now,
         now
@@ -174,20 +185,22 @@ export class IntegrationAuthManager {
   }
 
   getCredential(id: string): IntegrationCredential | null {
+    const key = this.requireKey();
     const row = this.db.prepare("SELECT * FROM integration_credentials WHERE id = ?").get(id) as
       | CredentialRow
       | undefined;
-    return row ? rowToCredential(row, this.key) : null;
+    return row ? rowToCredential(row, key) : null;
   }
 
   listCredentials(integrationId: string): IntegrationCredential[] {
+    const key = this.requireKey();
     const rows = this.db
       .prepare(
         "SELECT * FROM integration_credentials WHERE integration_id = ? ORDER BY created_at DESC"
       )
       .all(integrationId) as CredentialRow[];
     return rows.map((row) => {
-      const credential = rowToCredential(row, this.key);
+      const credential = rowToCredential(row, key);
       return { ...credential, credentials: maskCredentials(credential.credentials) };
     });
   }
@@ -257,6 +270,7 @@ export class IntegrationAuthManager {
       scope: token.scope ?? existing.credentials.scope,
     };
     const now = nowSeconds();
+    const key = this.requireKey();
     this.db
       .prepare(
         `UPDATE integration_credentials SET
@@ -266,7 +280,7 @@ export class IntegrationAuthManager {
          WHERE id = ?`
       )
       .run(
-        encryptJson(nextCredentials, this.key),
+        encryptJson(nextCredentials, key),
         token.expiresIn ? now + token.expiresIn : existing.expiresAt,
         now,
         id
