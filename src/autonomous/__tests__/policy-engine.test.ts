@@ -153,6 +153,22 @@ describe("PolicyEngine", () => {
     }
   });
 
+  it("requires escalation for mutating on-chain tools in the default config", () => {
+    expect(DEFAULT_POLICY_CONFIG.restrictedTools).toEqual(
+      expect.arrayContaining([
+        "ton_send",
+        "jetton_send",
+        "dns_start_auction",
+        "dns_bid",
+        "dns_link",
+        "dns_unlink",
+        "dns_set_site",
+        "stonfi_swap",
+        "dedust_swap",
+      ])
+    );
+  });
+
   it("uses real tool names in DEFAULT_POLICY_CONFIG.restrictedTools (no placeholder names)", () => {
     // Regression test for AUDIT-C1: placeholder names like "wallet:send"
     // would silently bypass the escalation gate because no registered tool
@@ -214,21 +230,71 @@ describe("PolicyEngine", () => {
     const task = makeTask({
       constraints: { budgetTON: 0.5 },
     });
-    const result = engine.checkAction(task, { toolName: "ton_send", tonAmount: 1.0 });
+    const result = engine.checkAction(task, {
+      toolName: "ton_send",
+      params: { amount: 1.0 },
+      tonAmount: 1.0,
+    });
 
     expect(result.violations.some((v) => v.type === "budget_exceeded")).toBe(true);
   });
 
+  it("blocks a TON-spending tool whose declared tonAmount is omitted", () => {
+    const task = makeTask({
+      constraints: { budgetTON: 0.5 },
+    });
+    const action = {
+      toolName: "ton_send",
+      params: { amount: 5 },
+    };
+
+    const result = engine.checkAction(task, action);
+
+    expect(result.allowed).toBe(false);
+    expect(result.violations.some((v) => v.type === "budget_exceeded")).toBe(true);
+  });
+
+  it("uses params.amount instead of an understated declared tonAmount", () => {
+    const task = makeTask({
+      constraints: { budgetTON: 0.5 },
+    });
+    const result = engine.checkAction(task, {
+      toolName: "ton_send",
+      params: { amount: 5 },
+      tonAmount: 0,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.violations.some((v) => v.type === "budget_exceeded")).toBe(true);
+  });
+
+  it("blocks invalid declared tonAmount values", () => {
+    const task = makeTask();
+
+    const result = engine.checkAction(task, { toolName: "safe_tool", tonAmount: Number.NaN });
+
+    expect(result.allowed).toBe(false);
+    expect(result.violations.some((v) => v.type === "invalid_ton_amount")).toBe(true);
+  });
+
   it("requires escalation for TON above confirmation threshold", () => {
     const task = makeTask();
-    const result = engine.checkAction(task, { toolName: "ton_send", tonAmount: 0.6 });
+    const result = engine.checkAction(task, {
+      toolName: "ton_send",
+      params: { amount: 0.6 },
+      tonAmount: 0.6,
+    });
 
     expect(result.requiresEscalation).toBe(true);
   });
 
   it("includes TON amount in violation message when amount exceeds confirmation threshold", () => {
     const task = makeTask();
-    const result = engine.checkAction(task, { toolName: "ton_send", tonAmount: 0.6 });
+    const result = engine.checkAction(task, {
+      toolName: "ton_send",
+      params: { amount: 0.6 },
+      tonAmount: 0.6,
+    });
 
     expect(result.requiresEscalation).toBe(true);
     const violation = result.violations.find((v) => v.type === "ton_confirmation");

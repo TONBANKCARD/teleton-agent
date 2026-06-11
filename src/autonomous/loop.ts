@@ -317,6 +317,7 @@ export class AutonomousLoop {
         // 2. Check policies / guardrails
         const policyCheck = this.policyEngine.satisfiesPolicies(current, {
           toolName: action.toolName,
+          params: action.params,
           tonAmount: action.tonAmount,
           recentActions: [...this.policyEngine.getRecentActions()],
         });
