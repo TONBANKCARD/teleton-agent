@@ -248,6 +248,19 @@ describe("integrity & compatibility guards", () => {
       /invalid backup path|absolute|outside/i
     );
   });
+
+  it("rejects a backup entry with a Windows absolute path", () => {
+    const archivePath = join(root, "windows-absolute.tar.gz");
+    writeFileSync(
+      archivePath,
+      buildArchiveWithEntry("C:\\Windows\\Temp\\teleton-absolute-restore.txt", Buffer.from("owned"))
+    );
+
+    expect(() => inspectBackup(archivePath)).toThrow(/invalid backup path|absolute|outside/i);
+    expect(() => restoreBackup({ archivePath, root, skipSafetyBackup: true })).toThrow(
+      /invalid backup path|absolute|outside/i
+    );
+  });
 });
 
 describe("pre-upgrade backup hook", () => {
