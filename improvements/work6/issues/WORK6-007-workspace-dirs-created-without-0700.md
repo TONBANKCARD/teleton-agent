@@ -6,7 +6,7 @@ audit-source: "#604"
 finding-id: "WORK6-007"
 severity: "medium"
 category: "security"
-github-issue: "pending"
+github-issue: "https://github.com/xlabtg/teleton-agent/issues/612"
 ---
 
 ## Problem Description

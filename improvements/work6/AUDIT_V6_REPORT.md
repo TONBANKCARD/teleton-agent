@@ -83,24 +83,24 @@ The two highest-leverage findings are:
 
 | ID        | Severity | Category       | Summary                                                                     | Task file | GitHub |
 | --------- | -------- | -------------- | --------------------------------------------------------------------------- | --------- | ------ |
-| WORK6-001 | High     | security       | `workspace_rename` bypasses protected/immutable workspace-file checks        | [file](issues/WORK6-001-workspace-rename-bypasses-protected-files.md) | pending |
-| WORK6-002 | High     | security       | API per-method rate limiters never trip + leak a timer per request          | [file](issues/WORK6-002-api-per-method-rate-limiters-nonfunctional.md) | pending |
-| WORK6-003 | High     | data-integrity | `tg_messages` INSERT OR REPLACE corrupts the FTS5 external-content index     | [file](issues/WORK6-003-fts5-external-content-corruption-insert-or-replace.md) | pending |
-| WORK6-004 | Medium   | data-integrity | Soul editor tab-switch race can save one file's content into another         | [file](issues/WORK6-004-soul-editor-tab-switch-race-wrong-file.md) | pending |
-| WORK6-005 | Medium   | security       | OAuth token-exchange fetches a caller-supplied `tokenUrl` (SSRF)             | [file](issues/WORK6-005-oauth-token-exchange-ssrf.md) | pending |
-| WORK6-006 | Medium   | security       | Permission hardening targets non-existent `teleton.db*`; real DBs unhardened | [file](issues/WORK6-006-harden-permissions-wrong-db-filenames.md) | pending |
-| WORK6-007 | Medium   | security       | Root/workspace directories created without `0o700`                           | [file](issues/WORK6-007-workspace-dirs-created-without-0700.md) | pending |
-| WORK6-008 | Medium   | security       | `GET /api/mtproto` returns the unmasked proxy secret                         | [file](issues/WORK6-008-mtproto-get-returns-unmasked-proxy-secret.md) | pending |
-| WORK6-009 | Medium   | reliability    | SSE streams leak bus listeners when a write throws                          | [file](issues/WORK6-009-sse-listener-leak-on-write-error.md) | pending |
-| WORK6-010 | Medium   | data-integrity | `embedQuery` permanently caches empty embeddings (poisoning)                | [file](issues/WORK6-010-embedquery-caches-empty-embeddings.md) | pending |
-| WORK6-011 | Medium   | reliability    | Feed tables `tg_messages`/`tg_messages_vec` grow unbounded (no retention)   | [file](issues/WORK6-011-feed-tables-grow-unbounded.md) | pending |
-| WORK6-012 | Medium   | reliability    | In-flight LLM request ignores caller abort (only its own timeout cancels)   | [file](issues/WORK6-012-in-flight-llm-request-ignores-caller-abort.md) | pending |
-| WORK6-013 | Medium   | reliability    | Frontend list/analytics loaders have no request sequencing (stale overwrite) | [file](issues/WORK6-013-frontend-stale-response-races.md) | pending |
-| WORK6-014 | Low      | security       | State-mutating GET endpoints bypass CSRF and are cacheable                   | [file](issues/WORK6-014-state-mutating-get-endpoints-bypass-csrf.md) | pending |
-| WORK6-015 | Low      | data-integrity | `boostImpact` accepts an unbounded `amount` (ranking inflation)             | [file](issues/WORK6-015-memory-boostimpact-no-upper-bound.md) | pending |
-| WORK6-016 | Low      | reliability    | Sessions page crashes on a malformed 2xx response body                      | [file](issues/WORK6-016-sessions-page-crashes-on-malformed-response.md) | pending |
-| WORK6-017 | Low      | reliability    | Frontend SSE helpers have no error/disconnect handling                      | [file](issues/WORK6-017-sse-client-helpers-no-error-handling.md) | pending |
-| WORK6-018 | Low      | reliability    | `registerPluginTools` silently drops tool-name collisions                   | [file](issues/WORK6-018-registerplugintools-silently-drops-collisions.md) | pending |
+| WORK6-001 | High     | security       | `workspace_rename` bypasses protected/immutable workspace-file checks        | [file](issues/WORK6-001-workspace-rename-bypasses-protected-files.md) | [#606](https://github.com/xlabtg/teleton-agent/issues/606) |
+| WORK6-002 | High     | security       | API per-method rate limiters never trip + leak a timer per request          | [file](issues/WORK6-002-api-per-method-rate-limiters-nonfunctional.md) | [#607](https://github.com/xlabtg/teleton-agent/issues/607) |
+| WORK6-003 | High     | data-integrity | `tg_messages` INSERT OR REPLACE corrupts the FTS5 external-content index     | [file](issues/WORK6-003-fts5-external-content-corruption-insert-or-replace.md) | [#608](https://github.com/xlabtg/teleton-agent/issues/608) |
+| WORK6-004 | Medium   | data-integrity | Soul editor tab-switch race can save one file's content into another         | [file](issues/WORK6-004-soul-editor-tab-switch-race-wrong-file.md) | [#609](https://github.com/xlabtg/teleton-agent/issues/609) |
+| WORK6-005 | Medium   | security       | OAuth token-exchange fetches a caller-supplied `tokenUrl` (SSRF)             | [file](issues/WORK6-005-oauth-token-exchange-ssrf.md) | [#610](https://github.com/xlabtg/teleton-agent/issues/610) |
+| WORK6-006 | Medium   | security       | Permission hardening targets non-existent `teleton.db*`; real DBs unhardened | [file](issues/WORK6-006-harden-permissions-wrong-db-filenames.md) | [#611](https://github.com/xlabtg/teleton-agent/issues/611) |
+| WORK6-007 | Medium   | security       | Root/workspace directories created without `0o700`                           | [file](issues/WORK6-007-workspace-dirs-created-without-0700.md) | [#612](https://github.com/xlabtg/teleton-agent/issues/612) |
+| WORK6-008 | Medium   | security       | `GET /api/mtproto` returns the unmasked proxy secret                         | [file](issues/WORK6-008-mtproto-get-returns-unmasked-proxy-secret.md) | [#613](https://github.com/xlabtg/teleton-agent/issues/613) |
+| WORK6-009 | Medium   | reliability    | SSE streams leak bus listeners when a write throws                          | [file](issues/WORK6-009-sse-listener-leak-on-write-error.md) | [#614](https://github.com/xlabtg/teleton-agent/issues/614) |
+| WORK6-010 | Medium   | data-integrity | `embedQuery` permanently caches empty embeddings (poisoning)                | [file](issues/WORK6-010-embedquery-caches-empty-embeddings.md) | [#615](https://github.com/xlabtg/teleton-agent/issues/615) |
+| WORK6-011 | Medium   | reliability    | Feed tables `tg_messages`/`tg_messages_vec` grow unbounded (no retention)   | [file](issues/WORK6-011-feed-tables-grow-unbounded.md) | [#616](https://github.com/xlabtg/teleton-agent/issues/616) |
+| WORK6-012 | Medium   | reliability    | In-flight LLM request ignores caller abort (only its own timeout cancels)   | [file](issues/WORK6-012-in-flight-llm-request-ignores-caller-abort.md) | [#617](https://github.com/xlabtg/teleton-agent/issues/617) |
+| WORK6-013 | Medium   | reliability    | Frontend list/analytics loaders have no request sequencing (stale overwrite) | [file](issues/WORK6-013-frontend-stale-response-races.md) | [#618](https://github.com/xlabtg/teleton-agent/issues/618) |
+| WORK6-014 | Low      | security       | State-mutating GET endpoints bypass CSRF and are cacheable                   | [file](issues/WORK6-014-state-mutating-get-endpoints-bypass-csrf.md) | [#619](https://github.com/xlabtg/teleton-agent/issues/619) |
+| WORK6-015 | Low      | data-integrity | `boostImpact` accepts an unbounded `amount` (ranking inflation)             | [file](issues/WORK6-015-memory-boostimpact-no-upper-bound.md) | [#620](https://github.com/xlabtg/teleton-agent/issues/620) |
+| WORK6-016 | Low      | reliability    | Sessions page crashes on a malformed 2xx response body                      | [file](issues/WORK6-016-sessions-page-crashes-on-malformed-response.md) | [#621](https://github.com/xlabtg/teleton-agent/issues/621) |
+| WORK6-017 | Low      | reliability    | Frontend SSE helpers have no error/disconnect handling                      | [file](issues/WORK6-017-sse-client-helpers-no-error-handling.md) | [#622](https://github.com/xlabtg/teleton-agent/issues/622) |
+| WORK6-018 | Low      | reliability    | `registerPluginTools` silently drops tool-name collisions                   | [file](issues/WORK6-018-registerplugintools-silently-drops-collisions.md) | [#623](https://github.com/xlabtg/teleton-agent/issues/623) |
 
 ## 4. Findings detail
 

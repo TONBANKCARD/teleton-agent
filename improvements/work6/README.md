@@ -38,24 +38,24 @@ duplicate baseline and are not re-filed.
 
 | ID        | Severity | Category       | Task File                                                                            | GitHub Issue | Status   |
 | --------- | -------- | -------------- | ------------------------------------------------------------------------------------ | ------------ | -------- |
-| WORK6-001 | High     | security       | [WORK6-001](issues/WORK6-001-workspace-rename-bypasses-protected-files.md)            | pending      | Pending  |
-| WORK6-002 | High     | security       | [WORK6-002](issues/WORK6-002-api-per-method-rate-limiters-nonfunctional.md)           | pending      | Pending  |
-| WORK6-003 | High     | data-integrity | [WORK6-003](issues/WORK6-003-fts5-external-content-corruption-insert-or-replace.md)   | pending      | Pending  |
-| WORK6-004 | Medium   | data-integrity | [WORK6-004](issues/WORK6-004-soul-editor-tab-switch-race-wrong-file.md)               | pending      | Pending  |
-| WORK6-005 | Medium   | security       | [WORK6-005](issues/WORK6-005-oauth-token-exchange-ssrf.md)                            | pending      | Pending  |
-| WORK6-006 | Medium   | security       | [WORK6-006](issues/WORK6-006-harden-permissions-wrong-db-filenames.md)                | pending      | Pending  |
-| WORK6-007 | Medium   | security       | [WORK6-007](issues/WORK6-007-workspace-dirs-created-without-0700.md)                  | pending      | Pending  |
-| WORK6-008 | Medium   | security       | [WORK6-008](issues/WORK6-008-mtproto-get-returns-unmasked-proxy-secret.md)            | pending      | Pending  |
-| WORK6-009 | Medium   | reliability    | [WORK6-009](issues/WORK6-009-sse-listener-leak-on-write-error.md)                     | pending      | Pending  |
-| WORK6-010 | Medium   | data-integrity | [WORK6-010](issues/WORK6-010-embedquery-caches-empty-embeddings.md)                   | pending      | Pending  |
-| WORK6-011 | Medium   | reliability    | [WORK6-011](issues/WORK6-011-feed-tables-grow-unbounded.md)                           | pending      | Pending  |
-| WORK6-012 | Medium   | reliability    | [WORK6-012](issues/WORK6-012-in-flight-llm-request-ignores-caller-abort.md)           | pending      | Pending  |
-| WORK6-013 | Medium   | reliability    | [WORK6-013](issues/WORK6-013-frontend-stale-response-races.md)                        | pending      | Pending  |
-| WORK6-014 | Low      | security       | [WORK6-014](issues/WORK6-014-state-mutating-get-endpoints-bypass-csrf.md)             | pending      | Pending  |
-| WORK6-015 | Low      | data-integrity | [WORK6-015](issues/WORK6-015-memory-boostimpact-no-upper-bound.md)                    | pending      | Pending  |
-| WORK6-016 | Low      | reliability    | [WORK6-016](issues/WORK6-016-sessions-page-crashes-on-malformed-response.md)          | pending      | Pending  |
-| WORK6-017 | Low      | reliability    | [WORK6-017](issues/WORK6-017-sse-client-helpers-no-error-handling.md)                 | pending      | Pending  |
-| WORK6-018 | Low      | reliability    | [WORK6-018](issues/WORK6-018-registerplugintools-silently-drops-collisions.md)        | pending      | Pending  |
+| WORK6-001 | High     | security       | [WORK6-001](issues/WORK6-001-workspace-rename-bypasses-protected-files.md)            | [#606](https://github.com/xlabtg/teleton-agent/issues/606) | Created |
+| WORK6-002 | High     | security       | [WORK6-002](issues/WORK6-002-api-per-method-rate-limiters-nonfunctional.md)           | [#607](https://github.com/xlabtg/teleton-agent/issues/607) | Created |
+| WORK6-003 | High     | data-integrity | [WORK6-003](issues/WORK6-003-fts5-external-content-corruption-insert-or-replace.md)   | [#608](https://github.com/xlabtg/teleton-agent/issues/608) | Created |
+| WORK6-004 | Medium   | data-integrity | [WORK6-004](issues/WORK6-004-soul-editor-tab-switch-race-wrong-file.md)               | [#609](https://github.com/xlabtg/teleton-agent/issues/609) | Created |
+| WORK6-005 | Medium   | security       | [WORK6-005](issues/WORK6-005-oauth-token-exchange-ssrf.md)                            | [#610](https://github.com/xlabtg/teleton-agent/issues/610) | Created |
+| WORK6-006 | Medium   | security       | [WORK6-006](issues/WORK6-006-harden-permissions-wrong-db-filenames.md)                | [#611](https://github.com/xlabtg/teleton-agent/issues/611) | Created |
+| WORK6-007 | Medium   | security       | [WORK6-007](issues/WORK6-007-workspace-dirs-created-without-0700.md)                  | [#612](https://github.com/xlabtg/teleton-agent/issues/612) | Created |
+| WORK6-008 | Medium   | security       | [WORK6-008](issues/WORK6-008-mtproto-get-returns-unmasked-proxy-secret.md)            | [#613](https://github.com/xlabtg/teleton-agent/issues/613) | Created |
+| WORK6-009 | Medium   | reliability    | [WORK6-009](issues/WORK6-009-sse-listener-leak-on-write-error.md)                     | [#614](https://github.com/xlabtg/teleton-agent/issues/614) | Created |
+| WORK6-010 | Medium   | data-integrity | [WORK6-010](issues/WORK6-010-embedquery-caches-empty-embeddings.md)                   | [#615](https://github.com/xlabtg/teleton-agent/issues/615) | Created |
+| WORK6-011 | Medium   | reliability    | [WORK6-011](issues/WORK6-011-feed-tables-grow-unbounded.md)                           | [#616](https://github.com/xlabtg/teleton-agent/issues/616) | Created |
+| WORK6-012 | Medium   | reliability    | [WORK6-012](issues/WORK6-012-in-flight-llm-request-ignores-caller-abort.md)           | [#617](https://github.com/xlabtg/teleton-agent/issues/617) | Created |
+| WORK6-013 | Medium   | reliability    | [WORK6-013](issues/WORK6-013-frontend-stale-response-races.md)                        | [#618](https://github.com/xlabtg/teleton-agent/issues/618) | Created |
+| WORK6-014 | Low      | security       | [WORK6-014](issues/WORK6-014-state-mutating-get-endpoints-bypass-csrf.md)             | [#619](https://github.com/xlabtg/teleton-agent/issues/619) | Created |
+| WORK6-015 | Low      | data-integrity | [WORK6-015](issues/WORK6-015-memory-boostimpact-no-upper-bound.md)                    | [#620](https://github.com/xlabtg/teleton-agent/issues/620) | Created |
+| WORK6-016 | Low      | reliability    | [WORK6-016](issues/WORK6-016-sessions-page-crashes-on-malformed-response.md)          | [#621](https://github.com/xlabtg/teleton-agent/issues/621) | Created |
+| WORK6-017 | Low      | reliability    | [WORK6-017](issues/WORK6-017-sse-client-helpers-no-error-handling.md)                 | [#622](https://github.com/xlabtg/teleton-agent/issues/622) | Created |
+| WORK6-018 | Low      | reliability    | [WORK6-018](issues/WORK6-018-registerplugintools-silently-drops-collisions.md)        | [#623](https://github.com/xlabtg/teleton-agent/issues/623) | Created |
 
 The issue body frontmatter and footer contain the requested labels and milestone
 metadata. The automation account used for creation has no triage rights on the
