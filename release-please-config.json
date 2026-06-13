@@ -22,7 +22,8 @@
   "packages": {
     ".": {
       "package-name": "teleton",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": ["README.md"]
     }
   }
 }
