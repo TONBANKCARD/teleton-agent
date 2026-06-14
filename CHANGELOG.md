@@ -12,6 +12,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > [CONTRIBUTING.md](CONTRIBUTING.md#commit-conventions)). The entries below this
 > note are preserved as the historical, manually-maintained record.
 
+## [0.8.42](https://github.com/xlabtg/teleton-agent/compare/v0.8.41...v0.8.42) (2026-06-13)
+
+
+### Bug Fixes
+
+* **agent:** исправить прерываемый retry backoff ([fc48558](https://github.com/xlabtg/teleton-agent/commit/fc48558cc05194f7b6c3b7c54f1946a103917af1))
+* **autonomous:** проверять реальные параметры TON-расходов ([6e73eb5](https://github.com/xlabtg/teleton-agent/commit/6e73eb5d4da1fb3fa2ca953d41cdfd37a12191ba))
+* **backup:** запретить path traversal при восстановлении ([97e4ee1](https://github.com/xlabtg/teleton-agent/commit/97e4ee1cb6ed274092b5f03e83c6ecf2d658124f))
+* **backup:** запретить path traversal при восстановлении backup ([3ab689f](https://github.com/xlabtg/teleton-agent/commit/3ab689ff5a97383f8db0a8166fe0a9e6255f0d10))
+* **bot:** изолировать rate limit плагинов по пользователям ([54be19c](https://github.com/xlabtg/teleton-agent/commit/54be19cd82c6be6016e183048f2c6dc130d09dcd))
+* **ci:** устранить падения release-PR — esbuild advisory и рассинхрон версии README ([3b11a13](https://github.com/xlabtg/teleton-agent/commit/3b11a138bd45b5f1edadb79bd0498a8ad0d37679))
+* **memory:** повторять удаление удалённых векторов ([24a31bf](https://github.com/xlabtg/teleton-agent/commit/24a31bfb36a18f52e70f435c978a7ffeb2353b83))
+* **memory:** повторять удаление удалённых векторов ([b9d8e92](https://github.com/xlabtg/teleton-agent/commit/b9d8e921616016c6c9597b5cb421369543b6a1c6))
+* **security:** запретить redirect в pinned MCP fetch ([914f74f](https://github.com/xlabtg/teleton-agent/commit/914f74fb326ec3a325eb1c5c4f2797922c73d167))
+* **security:** защитить MCP URL от DNS rebinding ([4afabc7](https://github.com/xlabtg/teleton-agent/commit/4afabc78b344e366919eac2e0f36701fda4b7a85))
+* **security:** защитить regex политики от ReDoS ([ffdc274](https://github.com/xlabtg/teleton-agent/commit/ffdc2745ba062d59f0822eef71ab9a214077282c))
+* **security:** форсировать esbuild&gt;=0.28.1 (GHSA-gv7w-rqvm-qjhr) ([25a6785](https://github.com/xlabtg/teleton-agent/commit/25a6785741a5083282843418e164ccbadebaf66b))
+* запретить fallback-ключ для credentials интеграций ([083981c](https://github.com/xlabtg/teleton-agent/commit/083981c6d94c9eddcb62c2c982e133988cf903ec))
+
+
+### Documentation
+
+* **readme:** синхронизировать версию форка 0.8.41 ([9cbaa6d](https://github.com/xlabtg/teleton-agent/commit/9cbaa6d15df21729b6d528291d1f39742164f88b))
+* обновить версию fork в README ([34a4f2c](https://github.com/xlabtg/teleton-agent/commit/34a4f2c15ab7d03b188d272bfd0ad74fd1053434))
+
+
+### Build System
+
+* **release-please:** автосинхронизация версии форка в README ([f0b36c4](https://github.com/xlabtg/teleton-agent/commit/f0b36c48e0b6002f784e7d6648069475a26aff8b))
+
 ## [0.8.41](https://github.com/xlabtg/teleton-agent/compare/v0.8.40...v0.8.41) (2026-06-11)
 
 
